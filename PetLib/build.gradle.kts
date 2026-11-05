@@ -1,3 +1,4 @@
+import java.io.File
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
@@ -89,11 +90,16 @@ val cargoBuild = tasks.register("cargoBuild") {
                 "cargo-ndk is required to build PetLib. Install it with: cargo install cargo-ndk"
             )
         }
-        val installedTargets = tool("rustup", listOf("target", "list", "--installed")) ?: ""
-        val missing = rustAbis.values.filter { triple -> !installedTargets.contains(triple) }
+        val rustlib = System.getenv("PREFIX")?.let {
+            File(it, "lib/rustlib")
+        } ?: File("/data/data/com.termux/files/usr/lib/rustlib")
+
+        val missing = rustAbis.values.filter { triple ->
+            !File(rustlib, "$triple/lib").isDirectory
+        }
         if (missing.isNotEmpty()) {
             throw GradleException(
-                "Missing Rust Android targets for PetLib. Install them with: rustup target add ${missing.joinToString(" ")}"
+                "Missing Rust Android targets: ${missing.joinToString(", ")}. Install the matching rust-std Termux packages."
             )
         }
 

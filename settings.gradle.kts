@@ -24,7 +24,7 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "ZalithLauncher"
+rootProject.name = "BLauncher"
 include(":ZalithLauncher")
 include(":LWJGL")
 include(":LWJGL:patches")
