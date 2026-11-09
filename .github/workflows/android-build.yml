@@ -1,0 +1,46 @@
+name: Android Debug Build
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Setup Gradle cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+          key: gradle-${{ runner.os }}-${{ hashFile('build.gradle.kts') }}
+          restore-keys: |
+            gradle-${{ runner.os }}-
+
+      - name: Set up Android SDK
+        uses: actions/setup-android@v3
+        with:
+          api-level: 33
+          platform: latest
+
+      - name: Assemble Debug APK
+        run: chmod +x gradlew && ./gradlew :ZalithLauncher:assembleDebug
+
+      - name: Verify APK
+        run: |
+          apk=ZalithLauncher/build/outputs/apk/debug/*.apk
+          unzip -t "$apk"
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug-apk
+          path: ZalithLauncher/build/outputs/apk/debug/*.apk
