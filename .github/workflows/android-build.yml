@@ -63,8 +63,7 @@ jobs:
           chmod +x gradlew
           rustc --version
           cargo --version
-          cargo build --manifest-path PetLib/rust/Cargo.toml --target aarch64-linux-android --release -j 2
-          ./gradlew :ZalithLauncher:assembleDebug --no-daemon --max-workers=2
+          ./gradlew :PetLib:cargoBuild :ZalithLauncher:assembleDebug --no-daemon --max-workers=2
 
       - name: Verify APK
         run: |
