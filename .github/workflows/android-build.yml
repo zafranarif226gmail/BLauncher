@@ -31,6 +31,12 @@ jobs:
         with:
           targets: aarch64-linux-android
 
+      - name: Install cargo-ndk
+        run: |
+          cargo install cargo-ndk --locked
+          echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
+          cargo ndk --version
+
       - name: Install Android NDK
         run: |
           SDKMANAGER="$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager | head -n 1)"
