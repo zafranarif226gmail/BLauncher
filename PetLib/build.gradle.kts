@@ -61,67 +61,51 @@ val rustAbis = mapOf(
 )
 val petlibJniLibs = layout.buildDirectory.dir("petlib-jniLibs")
 
+
 val cargoBuild = tasks.register("cargoBuild") {
     group = "build"
-    description = "Cross-compiles the PetLib Rust core (cdylib) for all ABIs via cargo-ndk."
+    description = "Builds PetLib Rust core for ARM64 Termux."
     inputs.dir("rust/src")
     inputs.file("rust/Cargo.toml")
     inputs.file("rust/Cargo.lock")
     outputs.dir(petlibJniLibs)
+
     doLast {
-        fun tool(command: String, args: List<String>): String? = try {
-            val process = ProcessBuilder(listOf(command) + args)
-                .redirectErrorStream(true)
-                .start()
-            val output = process.inputStream.bufferedReader().readText()
-            process.waitFor()
-            if (process.exitValue() == 0) output.trim() else null
-        } catch (_: java.io.IOException) {
-            null
-        }
+        val rustDir = project.file("rust")
+        val output = petlibJniLibs.get().asFile
+        val abiDir = File(output, "arm64-v8a")
+        abiDir.mkdirs()
 
-        if (tool("cargo", listOf("--version")) == null) {
-            throw GradleException(
-                "Rust toolchain is required to build PetLib. Install it from https://rustup.rs and retry."
-            )
-        }
-        if (tool("cargo", listOf("ndk", "--version")) == null) {
-            throw GradleException(
-                "cargo-ndk is required to build PetLib. Install it with: cargo install cargo-ndk"
-            )
-        }
-        val rustlib = System.getenv("PREFIX")?.let {
-            File(it, "lib/rustlib")
-        } ?: File("/data/data/com.termux/files/usr/lib/rustlib")
-
-        val missing = rustAbis.values.filter { triple ->
-            !File(rustlib, "$triple/lib").isDirectory
-        }
-        if (missing.isNotEmpty()) {
-            throw GradleException(
-                "Missing Rust Android targets: ${missing.joinToString(", ")}. Install the matching rust-std Termux packages."
-            )
-        }
-
-        val outDir = petlibJniLibs.get().asFile.apply { mkdirs() }
         val command = listOf(
-            "cargo", "ndk",
-            "--platform", "26",
-            "--output-dir", outDir.absolutePath,
-        ) + rustAbis.values.flatMap { listOf("--target", it) } +
-            listOf("build", "--release")
+            "cargo", "build",
+            "--target", "aarch64-linux-android",
+            "--release",
+            "-j", "1"
+        )
+
         val process = ProcessBuilder(command)
-            .directory(project.file("rust"))
+            .directory(rustDir)
             .redirectErrorStream(true)
             .start()
-        val output = process.inputStream.bufferedReader().readText()
+
+        val log = process.inputStream.bufferedReader().readText()
         val exit = process.waitFor()
-        println(output)
+        println(log)
+
         if (exit != 0) {
-            throw GradleException("cargo-ndk build failed with exit code $exit.\n$output")
+            throw GradleException("PetLib Rust build failed:\n$log")
         }
+
+        val library = File(rustDir, "target/aarch64-linux-android/release/libpetlib.so")
+        if (!library.isFile) {
+            throw GradleException("libpetlib.so was not generated: ${library.absolutePath}")
+        }
+
+        library.copyTo(File(abiDir, "libpetlib.so"), overwrite = true)
+        println("PetLib ARM64 library copied to ${abiDir.absolutePath}")
     }
 }
+
 
 androidComponents {
     onVariants { variant ->
