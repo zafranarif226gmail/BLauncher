@@ -64,7 +64,7 @@ val petlibJniLibs = layout.buildDirectory.dir("petlib-jniLibs")
 
 val cargoBuild = tasks.register("cargoBuild") {
     group = "build"
-    description = "Builds PetLib Rust core for ARM64 Termux."
+    description = "Builds PetLib Rust core for ARM64 Android via cargo-ndk."
     inputs.dir("rust/src")
     inputs.file("rust/Cargo.toml")
     inputs.file("rust/Cargo.lock")
@@ -73,14 +73,11 @@ val cargoBuild = tasks.register("cargoBuild") {
     doLast {
         val rustDir = project.file("rust")
         val output = petlibJniLibs.get().asFile
-        val abiDir = File(output, "arm64-v8a")
-        abiDir.mkdirs()
 
         val command = listOf(
-            "cargo", "build",
-            "--target", "aarch64-linux-android",
-            "--release",
-            "-j", "1"
+            "cargo", "ndk", "-t", "arm64-v8a", "build",
+            "--release", "-j", "1",
+            "-o", output.absolutePath
         )
 
         val process = ProcessBuilder(command)
@@ -93,16 +90,15 @@ val cargoBuild = tasks.register("cargoBuild") {
         println(log)
 
         if (exit != 0) {
-            throw GradleException("PetLib Rust build failed:\n$log")
+            throw GradleException("PetLib Rust cargo-ndk build failed:\n$log")
         }
 
-        val library = File(rustDir, "target/aarch64-linux-android/release/libpetlib.so")
+        val library = File(output, "arm64-v8a/libpetlib.so")
         if (!library.isFile) {
             throw GradleException("libpetlib.so was not generated: ${library.absolutePath}")
         }
 
-        library.copyTo(File(abiDir, "libpetlib.so"), overwrite = true)
-        println("PetLib ARM64 library copied to ${abiDir.absolutePath}")
+        println("PetLib ARM64 library built at ${library.absolutePath}")
     }
 }
 
