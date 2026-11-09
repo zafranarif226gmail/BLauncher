@@ -2,10 +2,17 @@ name: Android Debug Build
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
 
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -16,31 +23,52 @@ jobs:
           distribution: temurin
           java-version: 21
 
+      - name: Set up Rust Android target
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android NDK
+        run: |
+          sdkmanager "ndk;27.2.12479018"
+          echo "ANDROID_NDK_HOME=$ANDROID_HOME/ndk/27.2.12479018" >> "$GITHUB_ENV"
+          echo "$ANDROID_HOME/ndk/27.2.12479018/toolchains/llvm/prebuilt/linux-x86_64/bin" >> "$GITHUB_PATH"
+
       - name: Setup Gradle cache
         uses: actions/cache@v4
         with:
           path: |
             ~/.gradle/caches
-          key: gradle-${{ runner.os }}-${{ hashFile('build.gradle.kts') }}
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
           restore-keys: |
             gradle-${{ runner.os }}-
 
-      - name: Set up Android SDK
-        uses: actions/setup-android@v3
-        with:
-          api-level: 33
-          platform: latest
-
-      - name: Assemble Debug APK
-        run: chmod +x gradlew && ./gradlew :ZalithLauncher:assembleDebug
+      - name: Build ARM64 Debug APK
+        env:
+          CARGO_TARGET_AARCH64_LINUX_ANDROID_LINKER: aarch64-linux-android34-clang
+        run: |
+          chmod +x gradlew
+          rustc --version
+          cargo --version
+          cargo build --manifest-path PetLib/rust/Cargo.toml --target aarch64-linux-android --release -j 2
+          ./gradlew :ZalithLauncher:assembleDebug --no-daemon --max-workers=2
 
       - name: Verify APK
         run: |
-          apk=ZalithLauncher/build/outputs/apk/debug/*.apk
-          unzip -t "$apk"
+          set -e
+          APK=$(find ZalithLauncher/build/outputs/apk/debug -name "*.apk" -print -quit)
+          test -n "$APK"
+          unzip -t "$APK"
+          echo "APK verified: $APK"
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: debug-apk
+          name: BLauncher-ARM64-Debug
           path: ZalithLauncher/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+          retention-days: 7
