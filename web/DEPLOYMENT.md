@@ -1,0 +1,135 @@
+# Deployment — Cloudflare Pages + Functions + R2
+
+BLauncher Mod is a static single-page app with a small set of **Cloudflare Pages Functions** backend routes, **R2 object storage** for uploads, and Google-sign-in sessions. HTTPS is automatic on every `*.pages.dev` and custom domain.
+
+> IMPORTANT: this guide never pretends a domain is live. You must verify DNS + HTTPS yourself in the Cloudflare dashboard after following the steps.
+
+---
+
+## 1. Prerequisites
+
+```bash
+npm install -g wrangler      # or use npx wrangler
+wrangler login
+```
+
+## 2. Create the R2 bucket
+
+```bash
+wrangler r2 bucket create blauncher-uploads
+```
+
+R2 keeps uploaded `.jar/.mcpack/.mcaddon` files persistently. The binding name in `wrangler.toml` is `FILES`.
+
+## 3. Deploy
+
+```bash
+# inside web/
+wrangler pages deploy . --project-name blauncher-web
+```
+
+- Output directory is the folder itself (assets, css, js, index.html).
+- `_routes.json` makes `/api/*` run your Functions and serves everything else as static files.
+- First deploy gives you `https://<project>.pages.dev` — **open it in a browser to verify before claiming it works.**
+
+## 4. Secrets (never in code, never in the repo)
+
+Set per environment (production + preview):
+
+| Variable | Used by | Where to get it |
+|---|---|---|
+| `SESSION_SECRET` | `functions/api/auth/*` — signs the session cookie | any long random string: `openssl rand -hex 32` |
+| `GOOGLE_CLIENT_ID` | Google login + `/api/config` | Google Cloud Console → Credentials → OAuth client (Web) — authorized origins must include your domain(s) |
+| `CURSEFORGE_API_KEY` | `functions/api/cf/[[path]].js` CurseForge proxy | https://console.curseforge.com/ |
+| `CURSEFORGE_PUBLISH_AUTH` | `/api/publish/curseforge` authorization status | only if CurseForge accepted your partner programme application |
+
+```bash
+wrangler pages secret put SESSION_SECRET --project-name blauncher-web
+wrangler pages secret put GOOGLE_CLIENT_ID --project-name blauncher-web
+wrangler pages secret put CURSEFORGE_API_KEY --project-name blauncher-web
+# optional: wrangler pages secret put CURSEFORGE_PUBLISH_AUTH --project-name blauncher-web
+```
+
+`MAX_FILE_MB` (default 100) is a public variable in `wrangler.toml` — change it to raise/lower the upload cap. Users can also cap it lower for themselves in the UI.
+
+## 5. Custom domain (e.g. BLauncher.com)
+
+1. In Cloudflare Dashboard → Pages → **blauncher-web** → *Custom domains* → **Set up a custom domain**.
+2. Enter `blauncher.com` (and `www.blauncher.com`).
+3. If the domain is already on Cloudflare, the CNAME is created for you; otherwise point the nameservers or add the records manually, then wait for the certificate (usually minutes).
+4. **Verify yourself:** open `https://blauncher.com` in a browser and check the certificate; run `nslookup blauncher.com` / `dig CNAME blauncher.com +short` if DNS seems stuck. Only after *you* see it live should you consider the domain connected — this repo never fakes that step.
+
+## 6. Google OAuth configuration
+
+In Google Cloud Console (your OAuth 2.0 Client):
+
+- **Authorized JavaScript origins**: `https://blauncher.com`, `https://www.blauncher.com`, `https://<project>.pages.dev`, plus `http://localhost:8080` for dev.
+- **Authorized redirect URIs**: none required (the site uses the GIS token flow, not redirects).
+- The client ID is public by design; the *client secret* is not used by this project and must **not** be committed.
+
+## 7. What works without any backend
+
+- Home, search, versions (all five tabs), Modrinth catalogue + details, favorites — 100% official public APIs, no keys.
+- The upload page still validates, hashes and detects metadata locally; it saves records on-device and clearly states no server was contacted.
+- CurseForge shows the honest "not configured" banner with the option to paste a personal key (works where the provider permits browser calls).
+- Publishing shows the Modrinth flow (your PAT, sent only to api.modrinth.com) and an authorization-gated CurseForge tab.
+
+## 8. CI notes
+
+The test suite lives in `tests/` and runs on plain Node 18+:
+
+```bash
+node tests/run-tests.mjs        # validation logic + live-API checks (network required)
+```
+
+## 9. Checklist before going public
+
+- [ ] `https://<domain>` opens with a valid certificate (verify).
+- [ ] `/api/config` returns `{"backend":true,...}` with the right booleans (verify).
+- [ ] CurseForge catalogue shows live results (verify totals against curseforge.com).
+- [ ] Upload a small valid `.jar` → object appears in `blauncher-uploads` (verify in dashboard).
+- [ ] Google sign-in session cycle works (login → `/api/auth/me` → sign out).
+- [ ] Performance mode toggle behaves (verify on a mid-range Android phone).
+
+## 6. CurseForge API configuration (dashboard walk-through, step by step)
+
+### How to obtain the official key
+1. Visit **https://console.curseforge.com/** and sign in as a member of the CurseForge Extended / API programme (a dev key is NOT public and cannot be generated by everyone — do not fabricate one).
+2. Open **API Keys** → **Generate new key**. The result is a bcrypt-style string starting with `$2a$10$…`.
+3. Copy it to a password manager — the console shows it once.
+
+### Configure the production secret on Cloudflare Pages (dashboard)
+1. Open the **Cloudflare Dashboard** → **Workers & Pages**.
+2. Open the **BLauncher project**.
+3. Open **Settings**.
+4. Find **Variables and Secrets**.
+5. Add a secret named `CURSEFORGE_API_KEY`.
+6. Enter the official developer API key.
+7. Save and **redeploy** (a redeploy is required for secrets to reach the Functions).
+
+### Local Wrangler development
+```bash
+# .dev.vars (git-ignored — NEVER commit, never paste into chat)
+CURSEFORGE_API_KEY=$2a$10$YOUR-DEV-KEY-HERE
+npx wrangler pages dev .
+```
+
+### Test the API after configuring
+```bash
+# this site's proxy (expected: {"state":"CONNECTED",...} when the key works)
+curl https://YOUR-DOMAIN.pages.dev/api/cf/status
+
+# direct upstream sanity check (DO NOT print the key in shared terminals)
+curl -H "x-api-key: $CURSEFORGE_API_KEY" "https://api.curseforge.com/v1/games?pageSize=1"
+```
+
+### Troubleshooting status states (real states shown by /api/cf/status)
+| State | Meaning | Fix |
+|---|---|---|
+| `NOT CONFIGURED` | secret missing | redo the dashboard steps above, redeploy |
+| `UNAUTHORIZED` | key rejected (401/403) | regenerate/regenerate the paste — watch for extra spaces |
+| `RATE LIMITED` | upstream throttle | wait for `Retry-After`, reduce traffic |
+| `API ERROR` | upstream error 5xx/4xx | retry later; check CurseForge admin announcements |
+| `OFFLINE` | cannot reach api.curseforge.com | network/egress issue from Workers — retry later |
+
+Never: paste the key into the chat, into source, into localStorage, or into zips. The proxy keeps it in Cloudflare secret storage and sends it only as the official `x-api-key` header at api.curseforge.com.
