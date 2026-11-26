@@ -4,7 +4,7 @@ targetSdk = "34"
 minSdk = "21"
 #noinspection GradleDependency,NewerVersionAvailable
 bytehook = "1.0.10"
-coilCompose = "3.6.3"
+coilCompose = "3.4.0"
 compress = "1.28.0"
 documentfile = "1.1.0"
 zip4j = "2.11.6"
