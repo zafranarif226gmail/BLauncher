@@ -4,6 +4,9 @@ import com.android.build.gradle.tasks.MergeSourceSetFolders
 import groovy.json.JsonOutput
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import java.security.MessageDigest
+import java.util.zip.ZipEntry
+import java.util.zip.ZipFile
+import java.util.zip.ZipOutputStream
 
 plugins {
     alias(libs.plugins.android.application)
@@ -102,6 +105,58 @@ fun writeComponentAssetManifests(assetsDir: File) {
         ?.forEach { componentPaths += "app_runtime/lwjgl/${it.name}" }
     componentPaths.forEach {
         writeAssetManifest(assetsDir, it)
+    }
+}
+
+// These AARs contain only LWJGL native assets, but both upstream manifests use the same
+// package name. Give each a distinct manifest namespace in build output to satisfy AGP 9.
+val lwjglNativeAarPreparations = fileTree("libs") {
+    include("lwjgl-*-natives-release.aar")
+}.files.sortedBy { it.name }.map { aar ->
+    val version = Regex("lwjgl-(\\d+\\.\\d+\\.\\d+)-natives-release\\.aar")
+        .matchEntire(aar.name)?.groupValues?.get(1)
+        ?: error("Unrecognized LWJGL native AAR name: ${aar.name}")
+    val namespace = "org.angelauramc.lwjgl3x.v${version.replace(".", "")}"
+    val outputAar = layout.buildDirectory.file("intermediates/patched-lwjgl-aars/${aar.name}")
+
+    tasks.register("prepareLwjgl${version.replace(".", "")}NativesAar") {
+        inputs.file(aar)
+        outputs.file(outputAar)
+        doLast {
+            val target = outputAar.get().asFile
+            target.parentFile.mkdirs()
+            ZipFile(aar).use { source ->
+                ZipOutputStream(target.outputStream().buffered()).use { destination ->
+                    val entries = source.entries()
+                    while (entries.hasMoreElements()) {
+                        val entry = entries.nextElement()
+                        val targetEntry = ZipEntry(entry.name)
+                        if (entry.time >= 0L) targetEntry.time = entry.time
+                        destination.putNextEntry(targetEntry)
+                        if (!entry.isDirectory) {
+                            source.getInputStream(entry).use { input ->
+                                if (entry.name == "AndroidManifest.xml") {
+                                    val originalManifest = input.bufferedReader().use { it.readText() }
+                                    val originalPackage = "package=\"org.angelauramc.lwjgl3x\""
+                                    check(originalManifest.contains(originalPackage)) {
+                                        "Unexpected LWJGL manifest package in ${aar.name}"
+                                    }
+                                    destination.write(
+                                        originalManifest.replace(
+                                            originalPackage,
+                                            "package=\"$namespace\""
+                                        ).toByteArray(Charsets.UTF_8)
+                                    )
+                                } else {
+                                    input.copyTo(destination)
+                                }
+                            }
+                        }
+                        destination.closeEntry()
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -377,7 +432,18 @@ dependencies {
     implementation(libs.fishnet)
     implementation(libs.process.phoenix)
     implementation(libs.lunarcalendar)
-    implementation(fileTree(mapOf("dir" to "libs", "include" to listOf("*.jar", "*.aar"))))
+    implementation(
+        fileTree(
+            mapOf(
+                "dir" to "libs",
+                "include" to listOf("*.jar", "*.aar"),
+                "exclude" to listOf("lwjgl-*-natives-release.aar")
+            )
+        )
+    )
+    lwjglNativeAarPreparations.forEach { preparationTask ->
+        implementation(files(preparationTask))
+    }
     //Safe
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
