@@ -31,7 +31,8 @@ material = "1.12.0"
 material3 = "1.5.0-beta02"
 materialKolor = "5.0.1"
 mavenArtifact = "3.10.0"
-media3Exoplayer = "1.11.1"
+# Media3 1.9.0 raised minSdk to 23; keep 1.8.1 for API 21 support.
+media3Exoplayer = "1.8.1"
 minidnsHla = "1.1.3"
 #noinspection GradleDependency,NewerVersionAvailable
 mmkv = "1.3.14"
