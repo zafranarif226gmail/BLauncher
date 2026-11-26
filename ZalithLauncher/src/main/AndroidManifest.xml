@@ -3,7 +3,7 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <!-- Preserve the API 21 install floor; optional API-specific native paths are guarded in code. -->
-    <uses-sdk tools:overrideLibrary="top.mobilegl.simplefpewrapper,com.bzlzhh.ng_gl4es,org.angelauramc.openal_soft,androidx.navigation3.runtime,androidx.navigation3.ui,androidx.hilt.navigation.compose,androidx.hilt.lifecycle.viewmodel.compose,androidx.hilt.lifecycle.viewmodel,androidx.compose.material3.ripple,com.halilibo.richtext.commonmark,org.jetbrains.androidx.compose.material3" />
+    <uses-sdk tools:overrideLibrary="top.mobilegl.simplefpewrapper,com.bzlzhh.ng_gl4es,org.angelauramc.openal_soft,androidx.navigation3.runtime,androidx.navigation3.ui,androidx.hilt.navigation.compose,androidx.hilt.lifecycle.viewmodel.compose,androidx.hilt.lifecycle.viewmodel,androidx.compose.material3.ripple,com.halilibo.richtext.commonmark,com.halilibo.richtext.markdown,com.halilibo.richtext.ui,com.halilibo.richtext.ui.material3,org.jetbrains.androidx.compose.material3" />
 
     <uses-feature android:glEsVersion="0x00020000" />
     <uses-feature
