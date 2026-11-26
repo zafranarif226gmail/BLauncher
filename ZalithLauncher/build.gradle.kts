@@ -160,6 +160,15 @@ val lwjglNativeAarPreparations = fileTree("libs") {
     }
 }
 
+// WindowManager 1.5.0's Android artifacts require API 23; keep this family on its API 21 line.
+configurations.configureEach {
+    resolutionStrategy.eachDependency {
+        if (requested.group == "androidx.window") {
+            useVersion(libs.versions.windowManager.get())
+        }
+    }
+}
+
 android {
     namespace = zalithPackageName
     compileSdk {

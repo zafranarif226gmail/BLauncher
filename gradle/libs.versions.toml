@@ -55,6 +55,7 @@ espressoCore = "3.7.0"
 appcompat = "1.7.1"
 dagger = "2.60.1"
 hilt = "1.4.0"
+windowManager = "1.4.0"
 
 [libraries]
 androidx-media3-exoplayer = { module = "androidx.media3:media3-exoplayer", version.ref = "media3Exoplayer" }
