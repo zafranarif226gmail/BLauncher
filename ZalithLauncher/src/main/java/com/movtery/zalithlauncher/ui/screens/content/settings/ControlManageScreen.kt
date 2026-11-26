@@ -227,7 +227,7 @@ fun ControlManageScreen(
     val context = LocalContext.current
 
     val configuration = LocalConfiguration.current
-    val locale = configuration.locales[0]
+    val locale = configuration.primaryLocale()
 
     ControlOperation(
         operation = viewModel.operation,

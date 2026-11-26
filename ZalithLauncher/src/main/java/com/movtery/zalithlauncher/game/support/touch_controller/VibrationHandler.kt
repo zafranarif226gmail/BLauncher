@@ -58,6 +58,13 @@ class VibrationHandler(
             vibrateDuration: Int?,
             vibrateKind: VibrateKind?,
         ) {
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
+                val duration = vibrateDuration?.coerceAtMost(500)?.coerceAtLeast(80)?.toLong() ?: 100L
+                runCatching { vibrator.vibrate(duration) }
+                    .onFailure { Logger.error(TAG, "Failed to attempt vibrating the device!", it) }
+                return
+            }
+
             runCatching {
                 val effectKind = if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
                     VibrateKind.ONE_SHOT

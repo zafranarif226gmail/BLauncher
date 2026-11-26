@@ -33,6 +33,7 @@ import com.movtery.zalithlauncher.ui.components.SimpleAlertDialog
 import com.movtery.zalithlauncher.ui.components.SimpleListDialog
 import com.movtery.zalithlauncher.ui.components.SimpleListItem
 import com.movtery.zalithlauncher.ui.screens.main.control_editor.orUnspecified
+import com.movtery.zalithlauncher.utils.primaryLocale
 import java.io.File
 
 sealed interface ReplacementControlState {
@@ -74,7 +75,7 @@ private fun ReplacementControlDialog(
     val controls = remember(dataList) { dataList.filter { it.isSupport } }
 
     if (controls.isNotEmpty()) {
-        val locale = LocalConfiguration.current.locales[0]
+        val locale = LocalConfiguration.current.primaryLocale()
 
         val current = remember(controls) {
             controls.find { currentLayout?.name == it.file.name }

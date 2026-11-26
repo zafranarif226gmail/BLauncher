@@ -23,6 +23,7 @@ import android.content.Context
 import android.content.ContextWrapper
 import android.database.ContentObserver
 import android.hardware.display.DisplayManager
+import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.provider.Settings
@@ -100,10 +101,14 @@ fun FestivalEffects(
     val context = LocalContext.current
     DisposableEffect(inForeground) {
         if (inForeground) {
-            val display = context.getSystemService(DisplayManager::class.java)
+            val display = (context.getSystemService(Context.DISPLAY_SERVICE) as? DisplayManager)
                 ?.getDisplay(Display.DEFAULT_DISPLAY)
 
-            val rate = display?.mode?.refreshRate ?: 0f
+            val rate = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                display?.mode?.refreshRate ?: 0f
+            } else {
+                display?.refreshRate ?: 0f
+            }
             val window = context.findActivityWindow()
             if (window != null && rate > 0f) {
                 window.attributes = window.attributes.apply {

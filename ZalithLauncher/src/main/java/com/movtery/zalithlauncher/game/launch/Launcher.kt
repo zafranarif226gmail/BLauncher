@@ -307,7 +307,12 @@ abstract class Launcher(
                 ?.let { addAll(it) }
 
             // 按地区获取公共 DNS
-            if (LocaleList.getDefault().get(0).displayName != Locale.CHINA.displayName) {
+            val systemLocale = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                LocaleList.getDefault().get(0)
+            } else {
+                Locale.getDefault()
+            }
+            if (systemLocale.displayName != Locale.CHINA.displayName) {
                 add("1.1.1.1")
                 add("1.0.0.1")
             } else {

@@ -85,7 +85,8 @@ class JvmService : Service() {
                 onExit = { code, _ ->
                     Logger.info(TAG, "Process exit with code $code")
                     //移除前台通知再停止服务，让系统知道这是正常关闭
-                    stopForeground(STOP_FOREGROUND_REMOVE)
+                    // The boolean overload is available on Android 5.x; the flags overload needs API 24.
+                    stopForeground(true)
                     //必须同步发送退出码
                     sendCode(code)
                     stopSelf()

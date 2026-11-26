@@ -23,11 +23,13 @@ import com.movtery.zalithlauncher.R
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.descriptors.PrimitiveKind
 import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
+import java.util.Locale
 
 @Serializable(with = PlatformReleaseType.Serializer::class)
 enum class PlatformReleaseType(val curseforgeCode: Int, val textRes: Int, val color: Color) {
@@ -42,7 +44,8 @@ enum class PlatformReleaseType(val curseforgeCode: Int, val textRes: Int, val co
 
     companion object {
         private val map = PlatformReleaseType.entries.associateBy { it.curseforgeCode }
-        fun fromCurseForgeCode(code: Int): PlatformReleaseType = map[code] ?: error("Unknown release code: $code")
+        fun fromCurseForgeCode(code: Int): PlatformReleaseType =
+            map[code] ?: throw SerializationException("Unknown CurseForge release code: $code")
     }
 
     object Serializer : KSerializer<PlatformReleaseType> {
@@ -50,19 +53,14 @@ enum class PlatformReleaseType(val curseforgeCode: Int, val textRes: Int, val co
             PrimitiveSerialDescriptor("PlatformReleaseType", PrimitiveKind.STRING)
 
         override fun deserialize(decoder: Decoder): PlatformReleaseType {
-            return when (val input = runCatching { decoder.decodeInt() }.getOrNull()) {
-                null -> {
-                    val name = decoder.decodeString().lowercase()
-                    when (name) {
-                        "release" -> RELEASE
-                        "beta" -> BETA
-                        "alpha" -> ALPHA
-                        else -> error("Unknown type name: $name")
-                    }
-                }
-                else -> {
-                    PlatformReleaseType.fromCurseForgeCode(input)
-                }
+            val input = decoder.decodePlatformEnumValue("PlatformReleaseType")
+            input.toIntOrNull()?.let { return PlatformReleaseType.fromCurseForgeCode(it) }
+
+            return when (input.lowercase(Locale.ROOT)) {
+                "release" -> RELEASE
+                "beta" -> BETA
+                "alpha" -> ALPHA
+                else -> throw SerializationException("Unknown platform release type: $input")
             }
         }
 

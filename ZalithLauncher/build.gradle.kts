@@ -131,7 +131,7 @@ android {
     defaultConfig {
         applicationId = zalithPackageName
         applicationIdSuffix = ".v2"
-        minSdk = 26
+        minSdk = libs.versions.minSdk.get().toInt()
         targetSdk = 34
         versionCode = launcherVersionCode
         versionName = launcherVersionName
@@ -341,7 +341,8 @@ dependencies {
     implementation(platform(libs.editor.bom))
     implementation(libs.editor)
     implementation(libs.editor.language.textmate)
-    coreLibraryDesugaring(libs.desugar.jdk.libs)
+    // Backport java.time and java.nio.file APIs used by the app to API 21.
+    coreLibraryDesugaring(libs.desugar.jdk.libs.nio)
     //Project
     implementation(project(":LayerController"))
     implementation(project(":ColorPicker"))

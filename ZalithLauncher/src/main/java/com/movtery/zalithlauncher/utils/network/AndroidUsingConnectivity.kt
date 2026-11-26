@@ -18,16 +18,21 @@
 
 package com.movtery.zalithlauncher.utils.network
 
+import android.content.Context
 import android.net.ConnectivityManager
+import android.os.Build
 import com.movtery.zalithlauncher.context.GlobalContext
 
 /**
  * 获取设备当前网络的真实 DNS 服务器
  */
 fun getSystemDnsServerAddresses(): List<String>? {
+    // activeNetwork was added in API 23; older Android versions use the resolver defaults.
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) return null
+
     return runCatching {
         val connectivityManager = GlobalContext.applicationContext
-            .getSystemService(ConnectivityManager::class.java) ?: return null
+            .getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager ?: return null
         val network = connectivityManager.activeNetwork ?: return null
         val linkProperties = connectivityManager.getLinkProperties(network) ?: return null
 

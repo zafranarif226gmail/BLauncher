@@ -56,7 +56,7 @@ object ControllerProxy {
                     transport = transport,
                     capabilities = setOf(PlatformCapability.TEXT_STATUS),
                 )
-                val vibrator = context.getSystemService(Vibrator::class.java)
+                val vibrator = context.getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator ?: return
                 val handler = VibrationHandler(vibrator, vibrateDuration, vibrateKind)
                 client.vibrationHandler = handler
                 client.run()

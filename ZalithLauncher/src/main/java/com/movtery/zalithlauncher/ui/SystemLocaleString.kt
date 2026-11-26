@@ -24,6 +24,7 @@ import android.content.res.Configuration
 import android.content.res.Resources
 import android.os.Build
 import android.os.LocaleList
+import java.util.Locale
 import androidx.annotation.StringRes
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -32,11 +33,17 @@ import androidx.compose.ui.platform.LocalContext
 /**
  * 获取不受应用内语言设置影响的系统语言列表
  */
-private fun getSystemLocaleList(context: Context): LocaleList {
+private fun getSystemLocales(context: Context): List<Locale> {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-        context.getSystemService(LocaleManager::class.java)?.systemLocales?.let { return it }
+        context.getSystemService(LocaleManager::class.java)?.systemLocales?.let { locales ->
+            return (0 until locales.size()).map(locales::get)
+        }
     }
-    return Resources.getSystem().configuration.locales
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+        val locales = Resources.getSystem().configuration.locales
+        return (0 until locales.size()).map(locales::get)
+    }
+    return listOf(Resources.getSystem().configuration.locale ?: Locale.getDefault())
 }
 
 /**
@@ -45,10 +52,14 @@ private fun getSystemLocaleList(context: Context): LocaleList {
 @Composable
 fun systemLocaleStringResource(@StringRes id: Int): String {
     val context = LocalContext.current
-    val systemLocales = remember { getSystemLocaleList(context) }
+    val systemLocales = remember { getSystemLocales(context) }
     return remember(id, systemLocales) {
         val configuration = Configuration()
-        configuration.setLocales(systemLocales)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            configuration.setLocales(LocaleList(*systemLocales.toTypedArray()))
+        } else {
+            configuration.locale = systemLocales.firstOrNull() ?: Locale.getDefault()
+        }
         context.createConfigurationContext(configuration).getString(id)
     }
 }

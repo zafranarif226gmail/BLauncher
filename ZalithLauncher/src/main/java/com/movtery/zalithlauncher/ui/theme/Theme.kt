@@ -38,6 +38,7 @@ import androidx.compose.ui.platform.LocalContext
 import com.materialkolor.PaletteStyle
 import com.materialkolor.dynamicColorScheme
 import com.movtery.zalithlauncher.setting.AllSettings
+import com.movtery.zalithlauncher.setting.enums.DarkMode
 import com.movtery.zalithlauncher.setting.enums.isLauncherInDarkTheme
 import com.movtery.zalithlauncher.ui.theme.components.activeMaskView
 import com.movtery.zalithlauncher.utils.festival.Festival
@@ -653,11 +654,16 @@ fun ZalithLauncherTheme(
         }
     }
 
+    val systemManagedPalette = AllSettings.launcherDarkMode.state == DarkMode.FollowSystem ||
+        (dynamicColor && colorTheme == ColorThemeType.DYNAMIC && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)
     var currentDarkTheme by remember { mutableStateOf(darkTheme) }
     var currentDisplayScheme by remember { mutableStateOf(targetColorScheme) }
 
-    LaunchedEffect(darkTheme, targetColorScheme) {
-        if (darkTheme != currentDarkTheme) {
+    LaunchedEffect(darkTheme, targetColorScheme, systemManagedPalette) {
+        // The OS may change its window palette and Compose configuration together.
+        // Avoid snapshotting that in-between frame for the reveal animation; applying
+        // the new scheme directly prevents stale system colors showing as split panels.
+        if (darkTheme != currentDarkTheme && !systemManagedPalette) {
             context.activeMaskView(
                 maskComplete = {
                     currentDarkTheme = darkTheme

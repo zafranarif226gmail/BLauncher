@@ -483,13 +483,13 @@ class VMActivity : BaseAppCompatActivity(), SurfaceTextureListener {
 
         window?.apply {
             setBackgroundDrawable(NativeColor.BLACK.toDrawable())
-            if (AllSettings.sustainedPerformance.getValue()) {
+            if (AllSettings.sustainedPerformance.getValue() && Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
                 setSustainedPerformanceMode(true)
             }
             addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON) // 防止系统息屏
         }
 
-        getSystemService(DisplayManager::class.java)?.registerDisplayListener(displayListener, null)
+        (getSystemService(Context.DISPLAY_SERVICE) as? DisplayManager)?.registerDisplayListener(displayListener, null)
         applyMaxRefreshRatePolicy()
 
         val logFile = withLauncher { getLogFile() }
@@ -719,7 +719,7 @@ class VMActivity : BaseAppCompatActivity(), SurfaceTextureListener {
     }
 
     override fun onDestroy() {
-        getSystemService(DisplayManager::class.java)?.unregisterDisplayListener(displayListener)
+        (getSystemService(Context.DISPLAY_SERVICE) as? DisplayManager)?.unregisterDisplayListener(displayListener)
         stopAllService()
         withHandler { onDestroy() }
         SdlBridge.reset()
@@ -821,6 +821,7 @@ class VMActivity : BaseAppCompatActivity(), SurfaceTextureListener {
         override fun onDisplayRemoved(displayId: Int) {}
 
         override fun onDisplayChanged(displayId: Int) {
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) return
             if (SystemClock.uptimeMillis() - lastRequestAt < 1000L) return
             val display = currentDisplay() ?: return
             if (display.displayId != displayId ||
@@ -839,6 +840,11 @@ class VMActivity : BaseAppCompatActivity(), SurfaceTextureListener {
      * 关闭时清除两类请求，回落系统自适应刷新。
      */
     fun applyMaxRefreshRatePolicy() {
+        // Display.Mode and preferredDisplayModeId are available from API 23.
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
+            requestedRefreshRate = 0f
+            return
+        }
         val display = currentDisplay() ?: return
         if (!AllSettings.requestMaxRefreshRate.getValue()) {
             requestedRefreshRate = 0f

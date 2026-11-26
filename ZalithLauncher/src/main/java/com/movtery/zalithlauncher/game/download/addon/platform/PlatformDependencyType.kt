@@ -21,11 +21,13 @@ package com.movtery.zalithlauncher.game.download.addon.platform
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.descriptors.PrimitiveKind
 import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
+import java.util.Locale
 
 @Serializable(with = PlatformDependencyType.Serializer::class)
 enum class PlatformDependencyType(val curseforgeCode: Int) {
@@ -45,7 +47,8 @@ enum class PlatformDependencyType(val curseforgeCode: Int) {
 
     companion object {
         private val map = PlatformDependencyType.entries.associateBy { it.curseforgeCode }
-        fun fromCurseForgeCode(code: Int): PlatformDependencyType = map[code] ?: error("Unknown dependency code: $code")
+        fun fromCurseForgeCode(code: Int): PlatformDependencyType =
+            map[code] ?: throw SerializationException("Unknown CurseForge dependency code: $code")
     }
 
     object Serializer : KSerializer<PlatformDependencyType> {
@@ -53,20 +56,17 @@ enum class PlatformDependencyType(val curseforgeCode: Int) {
             PrimitiveSerialDescriptor("PlatformDependencyType", PrimitiveKind.STRING)
 
         override fun deserialize(decoder: Decoder): PlatformDependencyType {
-            return when (val input = runCatching { decoder.decodeInt() }.getOrNull()) {
-                null -> {
-                    val name = decoder.decodeString().lowercase()
-                    when (name) {
-                        "required" -> REQUIRED
-                        "optional" -> OPTIONAL
-                        "incompatible" -> INCOMPATIBLE
-                        "embedded" -> EMBEDDED
-                        else -> error("Unknown type name: $name")
-                    }
-                }
-                else -> {
-                    PlatformDependencyType.fromCurseForgeCode(input)
-                }
+            val input = decoder.decodePlatformEnumValue("PlatformDependencyType")
+            input.toIntOrNull()?.let { return PlatformDependencyType.fromCurseForgeCode(it) }
+
+            return when (input.lowercase(Locale.ROOT)) {
+                "required" -> REQUIRED
+                "optional" -> OPTIONAL
+                "incompatible" -> INCOMPATIBLE
+                "embedded" -> EMBEDDED
+                "tool" -> TOOL
+                "include" -> INCLUDE
+                else -> throw SerializationException("Unknown platform dependency type: $input")
             }
         }
 

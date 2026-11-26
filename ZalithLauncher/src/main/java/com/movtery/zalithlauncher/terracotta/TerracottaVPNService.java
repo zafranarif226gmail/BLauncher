@@ -195,17 +195,25 @@ public class TerracottaVPNService extends VpnService {
         }
 
         Notification.Builder builder;
-        builder = new Notification.Builder(this, NotificationChannelData.TERRACOTTA_VPN_CHANNEL.getChannelId());
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            builder = new Notification.Builder(this, NotificationChannelData.TERRACOTTA_VPN_CHANNEL.getChannelId());
+        } else {
+            builder = new Notification.Builder(this);
+        }
 
         Intent deleteIntent = new Intent(this, TerracottaVPNService.class)
                 .setAction(ACTION_REPOST)
                 .putExtra(EXTRA_FROM_DELETE, true)
                 .putExtra(EXTRA_STATE_TEXT, currentStateStringRes);
+        int pendingIntentFlags = PendingIntent.FLAG_UPDATE_CURRENT;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            pendingIntentFlags |= PendingIntent.FLAG_IMMUTABLE;
+        }
         PendingIntent deletePendingIntent = PendingIntent.getService(
                 this,
                 NOTIFICATION_ID_VPN_REQUEST_CODE,
                 deleteIntent,
-                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+                pendingIntentFlags
         );
 
         builder.setSmallIcon(R.mipmap.ic_launcher)

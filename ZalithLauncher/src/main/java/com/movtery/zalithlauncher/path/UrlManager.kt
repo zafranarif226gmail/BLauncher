@@ -43,9 +43,6 @@ import java.util.concurrent.TimeUnit
 val URL_USER_AGENT: String = "${BuildKeys.LAUNCHER_SHORT_NAME}/Android_${BuildConfig.VERSION_NAME}"
 val TIME_OUT = TimeUnit.SECONDS.toMillis(10L)
 
-const val HOST_CURSEFORGE_API = "api.curseforge.com"
-const val CURSEFORGE_CDN_SUFFIX = "forgecdn.net"
-
 const val URL_MCMOD: String = "https://www.mcmod.cn/"
 const val URL_MINECRAFT_VERSION_REPOS: String = "https://piston-meta.mojang.com/mc/game/version_manifest_v2.json"
 const val URL_MINECRAFT_ASSETS_INDEX: String = "https://launchermeta.mojang.com/v1/packages"
@@ -65,11 +62,6 @@ const val URL_CLOUD_RENDERER_PLUGINS = "https://www.123865.com/s/YLIUVv-hae0v"
 const val URL_CLOUD_DRIVE_DRIVER_PLUGINS = "https://www.123865.com/s/YLIUVv-3ae0v"
 const val URL_CLOUD_NATIVE_LIB_PLUGINS = "https://www.123865.com/s/YLIUVv-Hae0v"
 
-private fun isCurseForgeHost(host: String): Boolean =
-    host == HOST_CURSEFORGE_API ||
-            host == CURSEFORGE_CDN_SUFFIX ||
-            host.endsWith(".$CURSEFORGE_CDN_SUFFIX")
-
 /**
  * An [Interceptor] for CurseForge API requests.
  *
@@ -78,7 +70,7 @@ private fun isCurseForgeHost(host: String): Boolean =
  */
 private val CURSEFORGE_INTERCEPTOR = Interceptor { chain ->
     val request = chain.request()
-    if (isCurseForgeHost(request.url.host)) {
+    if (isCurseForgeApiHost(request.url.host)) {
         val apiKey = BuildKeys.CURSEFORGE_API
         if (apiKey.isNotBlank()) {
             val newRequest = request.newBuilder()
@@ -143,7 +135,7 @@ val GLOBAL_CLIENT = HttpClient(OkHttp) {
     }
 }.apply {
     requestPipeline.intercept(HttpRequestPipeline.State) {
-        if (isCurseForgeHost(context.url.host)) {
+        if (isCurseForgeApiHost(context.url.host)) {
             val apiKey = BuildKeys.CURSEFORGE_API
             if (apiKey.isNotBlank()) {
                 context.header("x-api-key", apiKey)

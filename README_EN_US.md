@@ -24,11 +24,11 @@ Thank you to every language contributor for helping make Zalith Launcher 2 more 
 
 ### Requirements
 
-* Android Studio **Bumblebee** or newer
+* Android Studio with support for the project's Android Gradle Plugin
 * Android SDK:
-  * **Minimum API level**: 26
-  * **Target API level**: 35
-* JDK 11
+  * **Minimum API level**: 21 (Android 5.0)
+  * **Target API level**: 34
+* JDK 17
 
 ### Build Steps
 

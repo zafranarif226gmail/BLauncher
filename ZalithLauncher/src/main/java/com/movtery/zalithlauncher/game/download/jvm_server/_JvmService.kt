@@ -22,6 +22,7 @@ import android.app.ActivityManager
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import androidx.core.content.ContextCompat
 import com.movtery.zalithlauncher.notification.NoticeProgress
 import com.movtery.zalithlauncher.path.PathManager
 import java.io.File
@@ -58,7 +59,7 @@ fun startJvmService(
     val intent = Intent(context, JvmService::class.java).apply {
         putExtras(bundle)
     }
-    context.startForegroundService(intent)
+    ContextCompat.startForegroundService(context, intent)
 }
 
 /**

@@ -23,6 +23,7 @@ import android.content.Context
 import android.content.Intent
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
+import android.os.Build
 import androidx.core.net.toUri
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.movtery.zalithlauncher.R
@@ -69,6 +70,9 @@ private const val DOWNLOAD_SOURCES_TIMEOUT = 5 * 60 * 1000L
  */
 fun isNetworkAvailable(context: Context): Boolean {
     val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager ?: return false
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
+        return connectivityManager.activeNetworkInfo?.isConnected == true
+    }
     val activeNetwork = connectivityManager.activeNetwork ?: return false
     val capabilities = connectivityManager.getNetworkCapabilities(activeNetwork) ?: return false
     return capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) ||
@@ -81,6 +85,9 @@ fun isNetworkAvailable(context: Context): Boolean {
  */
 fun isUsingMobileData(context: Context): Boolean {
     val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager ?: return false
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
+        return connectivityManager.activeNetworkInfo?.type == ConnectivityManager.TYPE_MOBILE
+    }
     val activeNetwork = connectivityManager.activeNetwork ?: return false
     val networkCapabilities = connectivityManager.getNetworkCapabilities(activeNetwork) ?: return false
     return networkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR)

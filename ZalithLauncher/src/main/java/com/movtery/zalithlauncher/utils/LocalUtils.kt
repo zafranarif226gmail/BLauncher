@@ -21,6 +21,7 @@ package com.movtery.zalithlauncher.utils
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
+import android.content.res.Configuration
 import android.opengl.EGL14
 import android.opengl.EGLConfig
 import android.opengl.GLES20
@@ -337,8 +338,11 @@ fun killProgress() {
     }
 }
 
+fun Configuration.primaryLocale(): Locale =
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) locales[0] else locale ?: Locale.getDefault()
+
 fun formatNumberByLocale(context: Context, number: Long): String {
-    val locale = context.resources.configuration.locales.get(0)
+    val locale = context.resources.configuration.primaryLocale()
 
     return when {
         isSimplifiedChinese(locale) || isTraditionalChinese(locale) -> formatChineseNumber(number)
@@ -429,7 +433,7 @@ fun isChinese(context: Context? = null): Boolean {
 
     //检查实际区域设置
     val resources = context?.resources
-    return resources != null && isChineseLocale(resources.configuration.locales[0])
+    return resources != null && isChineseLocale(resources.configuration.primaryLocale())
 }
 
 /**

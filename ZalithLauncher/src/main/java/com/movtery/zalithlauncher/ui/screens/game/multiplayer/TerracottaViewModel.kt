@@ -23,6 +23,7 @@ import android.content.Intent
 import android.net.VpnService
 import android.widget.Toast
 import androidx.activity.compose.ManagedActivityResultLauncher
+import androidx.core.content.ContextCompat
 import androidx.activity.result.ActivityResult
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -259,7 +260,7 @@ class TerracottaViewModel(
                                 } else {
                                     val vpnIntent = Intent(activity, TerracottaVPNService::class.java)
                                         .setAction(TerracottaVPNService.ACTION_START)
-                                    activity.startForegroundService(vpnIntent)
+                                    ContextCompat.startForegroundService(activity, vpnIntent)
                                 }
                             }
                         }

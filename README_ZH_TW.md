@@ -30,11 +30,11 @@
 
 ### 環境要求
 
-* Android Studio Bumblebee 以上
+* 與專案 Android Gradle Plugin 版本相容的 Android Studio
 * Android SDK：
-    * **最低 API**：26
-    * **目標 API**：35
-* JDK 11
+    * **最低 API**：21（Android 5.0）
+    * **目標 API**：34
+* JDK 17
 
 ### 構建步驟
 

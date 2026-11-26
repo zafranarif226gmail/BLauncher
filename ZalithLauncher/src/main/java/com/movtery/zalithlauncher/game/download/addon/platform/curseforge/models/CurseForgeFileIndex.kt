@@ -30,7 +30,7 @@ class CurseForgeFileIndex(
     @SerialName("fileId")
     val fileId: Int,
 
-    @SerialName("String")
+    @SerialName("filename")
     val filename: String? = null,
 
     @SerialName("releaseType")

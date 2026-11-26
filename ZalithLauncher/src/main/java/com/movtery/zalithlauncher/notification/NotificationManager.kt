@@ -59,6 +59,8 @@ object NotificationManager {
     }
 
     fun createNotificationChannel(context: Context, channelData: NotificationChannelData) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
+
         val manager = context.getSystemService(NOTIFICATION_SERVICE) as NotificationManager
         val channel = NotificationChannel(channelData.channelId, channelData.channelName(context), channelData.level).apply {
             channelData.channelDescription?.invoke(context)?.let { desc ->

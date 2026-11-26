@@ -71,6 +71,7 @@ import com.movtery.zalithlauncher.ui.theme.cardColor
 import com.movtery.zalithlauncher.ui.theme.itemColor
 import com.movtery.zalithlauncher.ui.theme.onCardColor
 import com.movtery.zalithlauncher.ui.theme.onItemColor
+import com.movtery.zalithlauncher.utils.primaryLocale
 import com.movtery.zalithlauncher.utils.string.isEmptyOrBlank
 
 /**
@@ -133,7 +134,7 @@ fun EditTranslatableTextDialog(
                 )
 
                 Spacer(modifier = Modifier.size(4.dp))
-                val locale = LocalConfiguration.current.locales[0]
+                val locale = LocalConfiguration.current.primaryLocale()
                 Text(
                     modifier = Modifier.fillMaxWidth(),
                     text = stringResource(R.string.control_editor_edit_translatable_other_tip, locale.toSimpleLangTag()),
