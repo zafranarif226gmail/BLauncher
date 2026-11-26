@@ -60,10 +60,28 @@ jobs:
         env:
           CARGO_TARGET_AARCH64_LINUX_ANDROID_LINKER: aarch64-linux-android34-clang
         run: |
+          set -o pipefail
           chmod +x gradlew
           rustc --version
           cargo --version
-          ./gradlew :PetLib:cargoBuild :ZalithLauncher:assembleDebug --no-daemon --max-workers=2
+          ./gradlew :PetLib:cargoBuild :ZalithLauncher:assembleDebug --stacktrace --no-daemon --max-workers=2 2>&1 | tee android-build.log
+
+      # Preserve a useful excerpt in the check-run annotations when the runner's
+      # signed log download is unavailable to the build sandbox.
+      - name: Report Gradle failure excerpt
+        if: failure()
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          log = Path("android-build.log")
+          if not log.is_file():
+              raise SystemExit(0)
+          lines = log.read_text(errors="replace").splitlines()
+          excerpt = "\n".join(lines[-120:]) or "Gradle log is empty"
+          escaped = excerpt.replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")
+          print(f"::error title=Gradle failure excerpt::{escaped}")
+          PY
 
       - name: Verify APK
         run: |
