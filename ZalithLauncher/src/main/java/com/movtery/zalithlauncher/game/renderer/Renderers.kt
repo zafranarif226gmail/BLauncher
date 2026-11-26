@@ -18,6 +18,7 @@
 
 package com.movtery.zalithlauncher.game.renderer
 
+import android.os.Build
 import com.movtery.zalithlauncher.game.renderer.renderers.FreedrenoRenderer
 import com.movtery.zalithlauncher.game.renderer.renderers.GL4ESRenderer
 import com.movtery.zalithlauncher.game.renderer.renderers.KopperZinkRenderer
@@ -48,8 +49,10 @@ object Renderers {
             currentRenderer = null
         }
 
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            addRenderer(NGGL4ESRenderer)
+        }
         addRenderers(
-            NGGL4ESRenderer,
             GL4ESRenderer,
             KopperZinkRenderer,
             MobileGluesRenderer,
