@@ -80,16 +80,21 @@ jobs:
           lines = log.read_text(errors="replace").splitlines()
           if not lines:
               lines = ["Gradle log is empty"]
-          selected = set(range(min(24, len(lines))))
+          # Gradle writes its banner to stderr. tee and Gradle's rich console can
+          # make the capture look non-empty while its failure message is missing;
+          # extract the actual error headline and retain context around it.
           markers = (
-              "failure:", "what went wrong:", "where:", "could not resolve",
-              "plugin [id:", "a problem occurred", "script compilation error",
+              "what went wrong:", "* exception is:", "* where:", "* what went wrong:",
+              "could not resolve", "plugin [id:", "a problem occurred", "script compilation error",
               "execution failed for task", "caused by:", "e: file://", "error:",
-              "no matching variant", "unsupported class file",
+              "no matching variant", "unsupported class file", "failed with an exception",
           )
+          selected = set()
           for index, line in enumerate(lines):
               if any(marker in line.lower() for marker in markers):
-                  selected.update(range(max(0, index - 1), min(len(lines), index + 5)))
+                  selected.update(range(max(0, index - 2), min(len(lines), index + 12)))
+          if not selected:
+              selected.update(range(max(0, len(lines) - 80), len(lines)))
           for index in sorted(selected)[:45]:
               line = lines[index].replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")
               print(f"::error title=Gradle diagnostic line {index + 1}::{line}")
