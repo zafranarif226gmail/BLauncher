@@ -2,8 +2,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <!-- These optional native runtimes are loaded only when their feature is used. -->
-    <uses-sdk tools:overrideLibrary="top.mobilegl.simplefpewrapper,com.bzlzhh.ng_gl4es,org.angelauramc.openal_soft" />
+    <!-- Preserve the API 21 install floor; optional API-specific native paths are guarded in code. -->
+    <uses-sdk tools:overrideLibrary="top.mobilegl.simplefpewrapper,com.bzlzhh.ng_gl4es,org.angelauramc.openal_soft,androidx.navigation3.runtime" />
 
     <uses-feature android:glEsVersion="0x00020000" />
     <uses-feature
