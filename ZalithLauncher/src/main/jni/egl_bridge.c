@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <pthread.h>
 
 #include <EGL/egl.h>
 #include <GL/osmesa.h>
@@ -264,8 +265,6 @@ EXTERNAL_API void pojavSetWindowHint(int hint, int value) {
 }
 
 EXTERNAL_API void pojavSwapBuffers() {
-    calculateFPS();
-
     if (pojav_environ->config_renderer == RENDERER_VK_ZINK
      || pojav_environ->config_renderer == RENDERER_GL4ES)
     {
@@ -277,6 +276,8 @@ EXTERNAL_API void pojavSwapBuffers() {
         virglSwapBuffers();
     }
 
+    // Count after the renderer's swap path has submitted this frame.
+    calculateFPS();
 }
 
 EXTERNAL_API void pojavMakeCurrent(void* window) {
@@ -311,18 +312,44 @@ void* maybe_load_vulkan() {
     return (void*) strtoul(getenv("VULKAN_PTR"), NULL, 0x10);
 }
 
-static int frameCount = 0;
+#define FPS_SAMPLE_INTERVAL_NS 1000000000ULL
+#define FPS_STALE_TIMEOUT_NS 1500000000ULL
+
+static pthread_mutex_t fpsMutex = PTHREAD_MUTEX_INITIALIZER;
+static uint32_t frameCount = 0;
 static int fps = 0;
-static time_t lastTime = 0;
+static uint64_t fpsWindowStartNs = 0;
+static uint64_t lastFrameNs = 0;
 
-void calculateFPS() {
-    frameCount++;
-    time_t currentTime = time(NULL);
+static uint64_t monotonicTimeNs(void) {
+    struct timespec now;
+    if (clock_gettime(CLOCK_MONOTONIC, &now) != 0) return 0;
+    return (uint64_t) now.tv_sec * FPS_SAMPLE_INTERVAL_NS + (uint64_t) now.tv_nsec;
+}
 
-    if (currentTime != lastTime) {
-        lastTime = currentTime;
-        fps = frameCount;
-        frameCount = 0;
+void calculateFPS(void) {
+    const uint64_t nowNs = monotonicTimeNs();
+    if (nowNs != 0) {
+        pthread_mutex_lock(&fpsMutex);
+        if (lastFrameNs == 0 || nowNs < lastFrameNs || nowNs - lastFrameNs > FPS_STALE_TIMEOUT_NS) {
+            // Start a fresh measurement after launch, a clock reset, or a render pause.
+            fps = 0;
+            frameCount = 1;
+            fpsWindowStartNs = nowNs;
+        } else {
+            frameCount++;
+            const uint64_t elapsedNs = nowNs - fpsWindowStartNs;
+            if (elapsedNs >= FPS_SAMPLE_INTERVAL_NS) {
+                // Count frame intervals, not both endpoint frames, and divide by the
+                // actual monotonic interval instead of a wall-clock second boundary.
+                const uint64_t frameIntervals = frameCount > 0 ? frameCount - 1 : 0;
+                fps = (int) ((frameIntervals * FPS_SAMPLE_INTERVAL_NS + elapsedNs / 2) / elapsedNs);
+                frameCount = 1;
+                fpsWindowStartNs = nowNs;
+            }
+        }
+        lastFrameNs = nowNs;
+        pthread_mutex_unlock(&fpsMutex);
     }
 
     if (!pojav_environ->hasGraphicOutput && pojav_environ->dalvikJavaVMPtr && pojav_environ->bridgeClazz && pojav_environ->method_onGraphicOutput) {
@@ -349,7 +376,14 @@ Java_org_lwjgl_vulkan_VK_updateFps(ABI_COMPAT JNIEnv *env, ABI_COMPAT jclass thi
 
 EXTERNAL_API JNIEXPORT jint JNICALL
 Java_org_lwjgl_glfw_CallbackBridge_getCurrentFps(JNIEnv *env, jclass clazz) {
-    return fps;
+    const uint64_t nowNs = monotonicTimeNs();
+    jint currentFps = 0;
+    pthread_mutex_lock(&fpsMutex);
+    if (nowNs != 0 && lastFrameNs != 0 && nowNs >= lastFrameNs && nowNs - lastFrameNs <= FPS_STALE_TIMEOUT_NS) {
+        currentFps = fps;
+    }
+    pthread_mutex_unlock(&fpsMutex);
+    return currentFps;
 }
 
 EXTERNAL_API JNIEXPORT jlong JNICALL

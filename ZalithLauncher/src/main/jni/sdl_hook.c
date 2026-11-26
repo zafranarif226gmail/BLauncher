@@ -256,8 +256,9 @@ static EGLBoolean proxyEglSwapBuffers(EGLDisplay dpy, void *surface) {
         LOG_TO_E("SDL_Hook: eglSwapBuffers was not resolved");
         return 0;
     }
-    calculateFPS();
-    return sOrigEglSwapBuffers(dpy, surface);
+    EGLBoolean swapped = sOrigEglSwapBuffers(dpy, surface);
+    if (swapped) calculateFPS();
+    return swapped;
 }
 
 // EGL 函数解析出口统一注入代理（bytehook 层与 dlsym 代理层共用）
