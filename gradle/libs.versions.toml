@@ -20,12 +20,13 @@ gson = "2.15.0"
 jetbrainsAnnotations = "26.1.0"
 kotlin = "2.4.21"
 kspPlugin = "2.3.12"
+# Activity 1.12.0 raised minSdk to 23; retain the API 21-compatible 1.11 line.
+androidxActivity = "1.11.0"
 # Core 1.18.0 raised minSdk to 23; keep Core/Core-ktx on the API 21 line.
 androidxCore = "1.17.0"
 kotlinxCoroutinesAndroid = "1.11.0"
 ktor = "3.6.1"
 lifecycleRuntimeKtx = "2.11.0"
-activityCompose = "1.13.0"
 composeBom = "2026.09.00"
 lunarcalendar = "4.0.7"
 material = "1.12.0"
@@ -78,7 +79,7 @@ androidx-core-splashscreen = { module = "androidx.core:core-splashscreen", versi
 androidx-lifecycle-runtime-ktx = { group = "androidx.lifecycle", name = "lifecycle-runtime-ktx", version.ref = "lifecycleRuntimeKtx" }
 androidx-lifecycle-runtime-compose = { module = "androidx.lifecycle:lifecycle-runtime-compose", version.ref = "lifecycleRuntimeKtx" }
 androidx-lifecycle-viewmodel-ktx = { module = "androidx.lifecycle:lifecycle-viewmodel-ktx", version.ref = "lifecycleRuntimeKtx" }
-androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "activityCompose" }
+androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "androidxActivity" }
 androidx-compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = "composeBom" }
 androidx-navigation3-runtime = { group = "androidx.navigation3", name = "navigation3-runtime", version.ref = "navigation3" }
 androidx-navigation3-ui = { group = "androidx.navigation3", name = "navigation3-ui", version.ref = "navigation3" }

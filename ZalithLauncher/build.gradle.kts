@@ -166,6 +166,9 @@ configurations.configureEach {
         if (requested.group == "androidx.window") {
             useVersion(libs.versions.windowManager.get())
         }
+        if (requested.group == "androidx.activity") {
+            useVersion(libs.versions.androidxActivity.get())
+        }
         if (requested.group == "androidx.core" &&
             (requested.name == "core" || requested.name == "core-ktx")
         ) {
