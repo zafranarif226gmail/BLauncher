@@ -160,11 +160,16 @@ val lwjglNativeAarPreparations = fileTree("libs") {
     }
 }
 
-// WindowManager 1.5.0's Android artifacts require API 23; keep this family on its API 21 line.
+// Keep transitive AndroidX artifacts on versions that preserve the API 21 install floor.
 configurations.configureEach {
     resolutionStrategy.eachDependency {
         if (requested.group == "androidx.window") {
             useVersion(libs.versions.windowManager.get())
+        }
+        if (requested.group == "androidx.core" &&
+            (requested.name == "core" || requested.name == "core-ktx")
+        ) {
+            useVersion(libs.versions.androidxCore.get())
         }
     }
 }

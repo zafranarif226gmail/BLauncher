@@ -20,7 +20,8 @@ gson = "2.15.0"
 jetbrainsAnnotations = "26.1.0"
 kotlin = "2.4.21"
 kspPlugin = "2.3.12"
-coreKtx = "1.19.1"
+# Core 1.18.0 raised minSdk to 23; keep Core/Core-ktx on the API 21 line.
+androidxCore = "1.17.0"
 kotlinxCoroutinesAndroid = "1.11.0"
 ktor = "3.6.1"
 lifecycleRuntimeKtx = "2.11.0"
@@ -55,6 +56,7 @@ espressoCore = "3.7.0"
 appcompat = "1.7.1"
 dagger = "2.60.1"
 hilt = "1.4.0"
+# WindowManager 1.5.0's Android artifacts require API 23.
 windowManager = "1.4.0"
 
 [libraries]
@@ -71,7 +73,7 @@ junit = { group = "junit", name = "junit", version.ref = "junit" }
 androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
 androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCore" }
 androidx-constraintlayout-compose = { module = "androidx.constraintlayout:constraintlayout-compose", version.ref = "constraintlayoutCompose" }
-androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
+androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "androidxCore" }
 androidx-core-splashscreen = { module = "androidx.core:core-splashscreen", version.ref = "coreSplashscreen" }
 androidx-lifecycle-runtime-ktx = { group = "androidx.lifecycle", name = "lifecycle-runtime-ktx", version.ref = "lifecycleRuntimeKtx" }
 androidx-lifecycle-runtime-compose = { module = "androidx.lifecycle:lifecycle-runtime-compose", version.ref = "lifecycleRuntimeKtx" }
