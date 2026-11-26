@@ -34,7 +34,6 @@ object BLauncherModSite {
     /** 分类资源页面（网站自身实现的 hash 路由）*/
     private const val HASH_MODRINTH_CATALOGUE = "#/modrinth?type=mod"
     private const val HASH_RESOURCE_PACKS_JAVA = "#/c/resourcepacks-java"
-    private const val HASH_DATA_PACKS_JAVA = "#/c/datapacks-java"
     private const val HASH_MAPS_JAVA = "#/c/maps-java"
     private const val HASH_SHADERS_JAVA = "#/c/shaders-java"
 
@@ -45,7 +44,6 @@ object BLauncherModSite {
     fun urlFor(classes: PlatformClasses): String = when (classes) {
         PlatformClasses.MOD -> URL_HOME + HASH_MODRINTH_CATALOGUE
         PlatformClasses.RESOURCE_PACK -> URL_HOME + HASH_RESOURCE_PACKS_JAVA
-        PlatformClasses.DATA_PACK -> URL_HOME + HASH_DATA_PACKS_JAVA
         PlatformClasses.SAVES -> URL_HOME + HASH_MAPS_JAVA
         PlatformClasses.SHADERS -> URL_HOME + HASH_SHADERS_JAVA
         else -> URL_HOME
