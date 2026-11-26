@@ -18,6 +18,7 @@
 
 package com.movtery.zalithlauncher.game.renderer
 
+import android.os.Build
 import com.movtery.zalithlauncher.game.plugin.Plugin
 import com.movtery.zalithlauncher.game.version.installed.Version
 import com.movtery.zalithlauncher.game.version.mod.LocalMod
@@ -54,7 +55,8 @@ fun isSfpewEnabledFor(
     version: Version,
     launchConfig: RendererLaunchConfig? = null
 ): Boolean =
-    !version.fpeEmulatorModDetected &&
+    Build.VERSION.SDK_INT >= Build.VERSION_CODES.O &&
+        !version.fpeEmulatorModDetected &&
         (launchConfig?.sfpewLayerEnabled ?: isSfpewConfiguredFor(renderer, version))
 
 /**

@@ -2,6 +2,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <!-- SimpleFPEWrapper is optional and only enabled on API 26+ at runtime. -->
+    <uses-sdk tools:overrideLibrary="top.mobilegl.simplefpewrapper" />
+
     <uses-feature android:glEsVersion="0x00020000" />
     <uses-feature
         android:name="android.hardware.type.pc"
