@@ -78,9 +78,21 @@ jobs:
           if not log.is_file():
               raise SystemExit(0)
           lines = log.read_text(errors="replace").splitlines()
-          excerpt = "\n".join(lines[-120:]) or "Gradle log is empty"
-          escaped = excerpt.replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")
-          print(f"::error title=Gradle failure excerpt::{escaped}")
+          if not lines:
+              lines = ["Gradle log is empty"]
+          selected = set(range(min(24, len(lines))))
+          markers = (
+              "failure:", "what went wrong:", "where:", "could not resolve",
+              "plugin [id:", "a problem occurred", "script compilation error",
+              "execution failed for task", "caused by:", "e: file://", "error:",
+              "no matching variant", "unsupported class file",
+          )
+          for index, line in enumerate(lines):
+              if any(marker in line.lower() for marker in markers):
+                  selected.update(range(max(0, index - 1), min(len(lines), index + 5)))
+          for index in sorted(selected)[:45]:
+              line = lines[index].replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")
+              print(f"::error title=Gradle diagnostic line {index + 1}::{line}")
           PY
 
       - name: Verify APK
