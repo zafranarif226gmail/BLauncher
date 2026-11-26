@@ -31,8 +31,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.color.utilities.CorePalette
+import com.google.android.material.color.utilities.DynamicColor
 import com.google.android.material.color.utilities.DynamicScheme
 import com.google.android.material.color.utilities.Hct
+import com.google.android.material.color.utilities.MaterialDynamicColors
 import com.google.android.material.color.utilities.Variant
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.movtery.zalithlauncher.setting.AllSettings
@@ -114,7 +116,8 @@ private fun buildColorScheme(seedColor: Int, darkTheme: Boolean): NativeColorSch
         palettes.n2
     )
 
-    val hctNeutral = Hct.fromInt(scheme.surface)
+    val dynamicColors = MaterialDynamicColors()
+    val hctNeutral = Hct.fromInt(dynamicColors.surface().getArgb(scheme))
     val surfaceDim: Int
     val surfaceBright: Int
     val surfaceContainerLowest: Int
@@ -141,34 +144,37 @@ private fun buildColorScheme(seedColor: Int, darkTheme: Boolean): NativeColorSch
         surfaceContainerHighest = Hct.from(hctNeutral.hue, hctNeutral.chroma, 90.0).toInt()
     }
 
+    val resolveColor: (DynamicColor) -> Color = { color ->
+        Color(color.getArgb(scheme))
+    }
     return NativeColorScheme(
-        primary = Color(scheme.primary),
-        onPrimary = Color(scheme.onPrimary),
-        primaryContainer = Color(scheme.primaryContainer),
-        onPrimaryContainer = Color(scheme.onPrimaryContainer),
-        secondary = Color(scheme.secondary),
-        onSecondary = Color(scheme.onSecondary),
-        secondaryContainer = Color(scheme.secondaryContainer),
-        onSecondaryContainer = Color(scheme.onSecondaryContainer),
-        tertiary = Color(scheme.tertiary),
-        onTertiary = Color(scheme.onTertiary),
-        tertiaryContainer = Color(scheme.tertiaryContainer),
-        onTertiaryContainer = Color(scheme.onTertiaryContainer),
-        error = Color(scheme.error),
-        onError = Color(scheme.onError),
-        errorContainer = Color(scheme.errorContainer),
-        onErrorContainer = Color(scheme.onErrorContainer),
-        background = Color(scheme.background),
-        onBackground = Color(scheme.onBackground),
-        surface = Color(scheme.surface),
-        onSurface = Color(scheme.onSurface),
-        surfaceVariant = Color(scheme.surfaceVariant),
-        onSurfaceVariant = Color(scheme.onSurfaceVariant),
-        outline = Color(scheme.outline),
-        outlineVariant = Color(scheme.outlineVariant),
-        inverseSurface = Color(scheme.inverseSurface),
-        inverseOnSurface = Color(scheme.inverseOnSurface),
-        inversePrimary = Color(scheme.inversePrimary),
+        primary = resolveColor(dynamicColors.primary()),
+        onPrimary = resolveColor(dynamicColors.onPrimary()),
+        primaryContainer = resolveColor(dynamicColors.primaryContainer()),
+        onPrimaryContainer = resolveColor(dynamicColors.onPrimaryContainer()),
+        secondary = resolveColor(dynamicColors.secondary()),
+        onSecondary = resolveColor(dynamicColors.onSecondary()),
+        secondaryContainer = resolveColor(dynamicColors.secondaryContainer()),
+        onSecondaryContainer = resolveColor(dynamicColors.onSecondaryContainer()),
+        tertiary = resolveColor(dynamicColors.tertiary()),
+        onTertiary = resolveColor(dynamicColors.onTertiary()),
+        tertiaryContainer = resolveColor(dynamicColors.tertiaryContainer()),
+        onTertiaryContainer = resolveColor(dynamicColors.onTertiaryContainer()),
+        error = resolveColor(dynamicColors.error()),
+        onError = resolveColor(dynamicColors.onError()),
+        errorContainer = resolveColor(dynamicColors.errorContainer()),
+        onErrorContainer = resolveColor(dynamicColors.onErrorContainer()),
+        background = resolveColor(dynamicColors.background()),
+        onBackground = resolveColor(dynamicColors.onBackground()),
+        surface = resolveColor(dynamicColors.surface()),
+        onSurface = resolveColor(dynamicColors.onSurface()),
+        surfaceVariant = resolveColor(dynamicColors.surfaceVariant()),
+        onSurfaceVariant = resolveColor(dynamicColors.onSurfaceVariant()),
+        outline = resolveColor(dynamicColors.outline()),
+        outlineVariant = resolveColor(dynamicColors.outlineVariant()),
+        inverseSurface = resolveColor(dynamicColors.inverseSurface()),
+        inverseOnSurface = resolveColor(dynamicColors.inverseOnSurface()),
+        inversePrimary = resolveColor(dynamicColors.inversePrimary()),
         surfaceDim = Color(surfaceDim),
         surfaceBright = Color(surfaceBright),
         surfaceContainerLowest = Color(surfaceContainerLowest),
