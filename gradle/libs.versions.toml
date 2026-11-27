@@ -16,7 +16,8 @@ coreSplashscreen = "1.2.0"
 desugarJdkLibs = "2.1.5"
 # Sora Editor 0.24.7 raised minSdk to 23; 0.24.6 is the last API 21 release.
 editorBom = "0.24.6"
-fishnet = "1.1.0"
+# Fishnet 1.1.0 raises minSdk to 23; 1.0.6 retains API 21 support.
+fishnet = "1.0.6"
 gson = "2.15.0"
 jetbrainsAnnotations = "26.1.0"
 kotlin = "2.4.21"
