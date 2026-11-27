@@ -56,6 +56,26 @@ jobs:
           restore-keys: |
             gradle-${{ runner.os }}-
 
+      - name: Report resolved Navigation3 dependencies
+        run: |
+          chmod +x gradlew
+          ./gradlew :ZalithLauncher:dependencies --configuration debugRuntimeClasspath --no-daemon --max-workers=2 > dependency-report.txt
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          lines = Path("dependency-report.txt").read_text(errors="replace").splitlines()
+          pattern = re.compile(
+              r"androidx\.(?:activity:(?:activity|activity-compose)|"
+              r"navigationevent:(?:navigationevent|navigationevent-compose)):"
+          )
+          resolved = sorted({line.strip() for line in lines if pattern.search(line)})
+          if not resolved:
+              resolved = ["No matching AndroidX dependencies found in debugRuntimeClasspath"]
+          summary = " | ".join(resolved)
+          print(f"::warning title=Resolved Activity and NavigationEvent versions::{summary}")
+          PY
+
       - name: Build ARM64 Debug APK
         env:
           CARGO_TARGET_AARCH64_LINUX_ANDROID_LINKER: aarch64-linux-android34-clang
@@ -85,9 +105,12 @@ jobs:
           # extract the actual error headline and retain context around it.
           markers = (
               "what went wrong:", "* exception is:", "* where:", "* what went wrong:",
-              "could not resolve", "plugin [id:", "a problem occurred", "script compilation error",
-              "execution failed for task", "caused by:", "e: file://", "error:",
+              "could not resolve", "could not find", "plugin [id:", "a problem occurred",
+              "script compilation error", "execution failed for task", "caused by:",
+              "e: file://", "error:", "unresolved reference", "overrides nothing",
+              "cannot access", "type mismatch", "no value passed for parameter",
               "no matching variant", "unsupported class file", "failed with an exception",
+              "build failed",
           )
           selected = set()
           for index, line in enumerate(lines):
@@ -95,6 +118,9 @@ jobs:
                   selected.update(range(max(0, index - 2), min(len(lines), index + 12)))
           if not selected:
               selected.update(range(max(0, len(lines) - 80), len(lines)))
+          # Always include the final diagnostic block as well: native compiler output can contain
+          # the word "Error" in warnings, which should not hide Gradle's final failure summary.
+          selected.update(range(max(0, len(lines) - 30), len(lines)))
           for index in sorted(selected)[:45]:
               line = lines[index].replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")
               print(f"::error title=Gradle diagnostic line {index + 1}::{line}")

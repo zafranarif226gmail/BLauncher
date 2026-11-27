@@ -67,8 +67,10 @@ private class ComposeBackNavigationEventInput : NavigationEventInput() {
     var backEnabled by mutableStateOf(false)
         private set
 
-    override fun onHasEnabledBackHandlersChanged(hasEnabledBackHandlers: Boolean) {
-        backEnabled = hasEnabledBackHandlers
+    // Navigation3 1.2.0 brings NavigationEvent 1.1.1. Use its common callback rather than the
+    // directional callback introduced in NavigationEvent 1.2.0.
+    override fun onHasEnabledHandlersChanged(hasEnabledHandlers: Boolean) {
+        backEnabled = hasEnabledHandlers
     }
 
     fun dispatchBackCompleted() {
