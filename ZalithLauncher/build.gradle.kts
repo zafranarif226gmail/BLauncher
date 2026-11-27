@@ -178,6 +178,9 @@ configurations.configureEach {
         if (requested.group == "androidx.savedstate") {
             useVersion(libs.versions.savedState.get())
         }
+        if (requested.group == "org.jetbrains.compose.runtime") {
+            useVersion(libs.versions.jetbrainsComposeRuntime.get())
+        }
         if (requested.group == "androidx.core" &&
             (requested.name == "core" || requested.name == "core-ktx")
         ) {
