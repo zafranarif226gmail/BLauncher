@@ -169,6 +169,12 @@ configurations.configureEach {
         if (requested.group == "androidx.activity") {
             useVersion(libs.versions.androidxActivity.get())
         }
+        // The Navigation3 adapter is independently versioned; keep other Lifecycle modules on 2.9.4.
+        if (requested.group == "androidx.lifecycle" &&
+            !requested.name.startsWith("lifecycle-viewmodel-navigation3")
+        ) {
+            useVersion(libs.versions.lifecycleRuntimeKtx.get())
+        }
         if (requested.group == "androidx.core" &&
             (requested.name == "core" || requested.name == "core-ktx")
         ) {
