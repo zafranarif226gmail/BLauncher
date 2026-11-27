@@ -181,6 +181,11 @@ configurations.configureEach {
         if (requested.group == "org.jetbrains.compose.runtime") {
             useVersion(libs.versions.jetbrainsComposeRuntime.get())
         }
+        if (requested.group == "androidx.graphics" &&
+            requested.name.startsWith("graphics-shapes")
+        ) {
+            useVersion(libs.versions.graphicsShapes.get())
+        }
         if (requested.group == "androidx.core" &&
             (requested.name == "core" || requested.name == "core-ktx")
         ) {
