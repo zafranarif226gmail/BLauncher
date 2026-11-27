@@ -683,11 +683,13 @@ fun ZalithLauncherTheme(
         LocalBackgroundViewModel provides backgroundViewModel,
         LocalFestivals provides festivals
     ) {
-        MaterialExpressiveTheme(
-            colorScheme = currentDisplayScheme,
-            motionScheme = MotionScheme.expressive(),
-            typography = AppTypography,
-            content = content
-        )
+        NavigationEventHost {
+            MaterialExpressiveTheme(
+                colorScheme = currentDisplayScheme,
+                motionScheme = MotionScheme.expressive(),
+                typography = AppTypography,
+                content = content
+            )
+        }
     }
 }
