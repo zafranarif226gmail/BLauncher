@@ -480,7 +480,6 @@ dependencies {
     //Safe
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
-    implementation(libs.sqlcipher.android)
     ksp(libs.androidx.room.compiler)
     //Support
     implementation(libs.proxy.client.android)
