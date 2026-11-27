@@ -18,7 +18,8 @@
 
 package com.movtery.zalithlauncher.ui.theme
 
-import androidx.activity.compose.BackHandler
+import androidx.activity.BackEventCompat
+import androidx.activity.compose.PredictiveBackHandler
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
@@ -26,15 +27,18 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.navigationevent.NavigationEvent
 import androidx.navigationevent.NavigationEventDispatcher
 import androidx.navigationevent.NavigationEventDispatcherOwner
 import androidx.navigationevent.NavigationEventInput
 import androidx.navigationevent.compose.LocalNavigationEventDispatcherOwner
+import kotlinx.coroutines.CancellationException
 
 /**
  * Supplies Navigation 3 with an event dispatcher when the host Activity predates Activity 1.12.
  * The app stays on Activity 1.11 for API 21 support, so its ComponentActivity cannot provide this
- * owner itself. A legacy Compose back handler forwards completed back presses into Navigation 3.
+ * owner itself. A Compose predictive-back handler forwards gesture progress and completion into
+ * Navigation 3.
  */
 @Composable
 internal fun NavigationEventHost(content: @Composable () -> Unit) {
@@ -53,8 +57,27 @@ internal fun NavigationEventHost(content: @Composable () -> Unit) {
         }
     }
 
-    BackHandler(enabled = backInput.backEnabled) {
-        backInput.dispatchBackCompleted()
+    PredictiveBackHandler(enabled = backInput.backEnabled) { progressEvents ->
+        var gestureStarted = false
+        try {
+            progressEvents.collect { backEvent ->
+                val navigationEvent = backEvent.toNavigationEvent()
+                if (gestureStarted) {
+                    backInput.dispatchBackProgressed(navigationEvent)
+                } else {
+                    backInput.dispatchBackStarted(navigationEvent)
+                    gestureStarted = true
+                }
+            }
+            // Empty progress flow is a regular button back; NavigationEventInput synthesizes
+            // the required non-predictive start before completing it.
+            backInput.dispatchBackCompleted()
+        } catch (cancelled: CancellationException) {
+            if (gestureStarted) {
+                backInput.dispatchBackCancelled()
+            }
+            throw cancelled
+        }
     }
 
     CompositionLocalProvider(
@@ -73,7 +96,31 @@ private class ComposeBackNavigationEventInput : NavigationEventInput() {
         backEnabled = hasEnabledHandlers
     }
 
+    fun dispatchBackStarted(event: NavigationEvent) {
+        dispatchOnBackStarted(event)
+    }
+
+    fun dispatchBackProgressed(event: NavigationEvent) {
+        dispatchOnBackProgressed(event)
+    }
+
     fun dispatchBackCompleted() {
         dispatchOnBackCompleted()
     }
+
+    fun dispatchBackCancelled() {
+        dispatchOnBackCancelled()
+    }
 }
+
+private fun BackEventCompat.toNavigationEvent(): NavigationEvent =
+    NavigationEvent(
+        swipeEdge = when (swipeEdge) {
+            BackEventCompat.EDGE_LEFT -> NavigationEvent.EDGE_LEFT
+            BackEventCompat.EDGE_RIGHT -> NavigationEvent.EDGE_RIGHT
+            else -> NavigationEvent.EDGE_NONE
+        },
+        progress = progress,
+        touchX = touchX,
+        touchY = touchY
+    )
