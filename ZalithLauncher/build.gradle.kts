@@ -175,6 +175,9 @@ configurations.configureEach {
         ) {
             useVersion(libs.versions.lifecycleRuntimeKtx.get())
         }
+        if (requested.group == "androidx.savedstate") {
+            useVersion(libs.versions.savedState.get())
+        }
         if (requested.group == "androidx.core" &&
             (requested.name == "core" || requested.name == "core-ktx")
         ) {
