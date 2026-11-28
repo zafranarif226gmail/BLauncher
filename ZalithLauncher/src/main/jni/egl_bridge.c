@@ -392,18 +392,26 @@ Java_org_lwjgl_vulkan_VK_getVulkanDriverHandle(ABI_COMPAT JNIEnv *env, ABI_COMPA
     return (jlong) maybe_load_vulkan();
 }
 
+static int effectiveSwapInterval(int requestedInterval) {
+    // The launcher defaults to uncapped rendering. Minecraft may request interval 1
+    // during startup, so apply the setting here as well as when the native window is
+    // first created; otherwise EGL's later request silently re-enables the refresh cap.
+    return getenv("POJAV_VSYNC_IN_ZINK") != NULL ? requestedInterval : 0;
+}
+
 EXTERNAL_API void pojavSwapInterval(int interval) {
-    lastSwapInterval = interval;
+    const int effectiveInterval = effectiveSwapInterval(interval);
+    lastSwapInterval = effectiveInterval;
 
     if (pojav_environ->config_renderer == RENDERER_VK_ZINK
      || pojav_environ->config_renderer == RENDERER_GL4ES)
     {
-        br_swap_interval(interval);
+        br_swap_interval(effectiveInterval);
     }
 
     if (pojav_environ->config_renderer == RENDERER_VIRGL)
     {
-        virglSwapInterval(interval);
+        virglSwapInterval(effectiveInterval);
     }
 
 }

@@ -39,6 +39,17 @@ class CurseForgeApiModelTest {
     }
 
     @Test
+    fun projectDataDecodesTheFilenameInLatestFilesIndexes() {
+        val data = json.decodeFromString(
+            CurseForgeData.serializer(),
+            """{"id":1,"gameId":432,"name":"Example","slug":"example","links":{},"summary":"","status":4,"downloadCount":3,"isFeatured":false,"primaryCategoryId":0,"categories":[],"authors":[],"mainFileId":12345,"latestFiles":[],"latestFilesIndexes":[{"gameVersion":"1.21.1","fileId":12345,"filename":"example.jar","releaseType":1,"modLoader":4}],"dateCreated":"2024-01-01T00:00:00Z","dateModified":"2024-01-01T00:00:00Z","dateReleased":"2024-01-01T00:00:00Z","gamePopularityRank":1,"isAvailable":true,"thumbsUpCount":0}"""
+        )
+
+        assertEquals("example.jar", data.latestFilesIndexes.single().filename)
+        assertEquals(CurseForgeModLoader.FABRIC, data.latestFilesIndexes.single().modLoader)
+    }
+
+    @Test
     fun releaseTypeAcceptsCurseForgeNumericCodesAndPlatformNames() {
         assertEquals(
             PlatformReleaseType.RELEASE,

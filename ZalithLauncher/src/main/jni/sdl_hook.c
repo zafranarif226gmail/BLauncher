@@ -18,6 +18,7 @@
 typedef uint32_t SDL_InitFlags;
 typedef struct SDL_Window SDL_Window;
 typedef struct SDL_Rect { int x, y, w, h; } SDL_Rect;
+typedef bool (*sdlGlSetSwapInterval_t)(int interval);
 
 bool SDL_InitSubSystem(SDL_InitFlags flags);
 bool SDL_SetHint(const char *name, const char *value);
@@ -27,6 +28,7 @@ const char *SDL_GetError(void);
 SDL_Window *SDL_GetWindowFromEvent(const void *event);
 SDL_Window *SDL_GetWindowFromID(uint32_t id);
 bool SDL_GL_SetAttribute(int attr, int value);
+bool SDL_GL_SetSwapInterval(int interval);
 void *SDL_LoadObject(const char *path);
 void SDL_UnloadObject(void *handle);
 void *SDL_LoadFunction(void *handle, const char *name);
@@ -76,7 +78,11 @@ typedef EGLBoolean (*eglSwapBuffers_t)(EGLDisplay dpy, void *surface);
 #define EGL_CONTEXT_MAJOR_VERSION_KHR 0x30FB
 #define EGL_CONTEXT_MINOR_VERSION_KHR 0x30FC
 
-
+static int sdlEffectiveSwapInterval(int requestedInterval) {
+    // Apply the uncapped default to SDL's GL path too. SDL can request interval 1
+    // after the native window has already been configured, restoring the refresh cap.
+    return getenv("POJAV_VSYNC_IN_ZINK") != NULL ? requestedInterval : 0;
+}
 
 // --- SDL 事件窗口解析修正 ---
 
@@ -281,6 +287,10 @@ static void *injectEglProxy(const char *name, void *resolved) {
 static void *custom_SDL_LoadFunction_Func(void *handle, const char *name) {
     void *r = BYTEHOOK_CALL_PREV(custom_SDL_LoadFunction_Func, SDL_LoadFunction_t, handle, name);
     BYTEHOOK_POP_STACK();
+    if (name != NULL && strcmp(name, "SDL_GL_SetSwapInterval") == 0) {
+        void *sdlProxy = sdlDlsymProxy(name, r);
+        if (sdlProxy != NULL) return sdlProxy;
+    }
     return injectEglProxy(name, r);
 }
 
@@ -409,6 +419,16 @@ static bool custom_SDL_InitSubSystem_Func(SDL_InitFlags flags) {
     return r;
 }
 
+static bool custom_SDL_GL_SetSwapInterval_Func(int interval) {
+    bool result = BYTEHOOK_CALL_PREV(
+        custom_SDL_GL_SetSwapInterval_Func,
+        sdlGlSetSwapInterval_t,
+        sdlEffectiveSwapInterval(interval)
+    );
+    BYTEHOOK_POP_STACK();
+    return result;
+}
+
 // 移动渲染器均为 OpenGL ES 实现，而游戏按桌面 GL 惯例初始化 SDL，
 // 非 ES 的 profile 请求会被宿主拒绝。因此在每次窗口创建前
 // 将 GL profile 强制为 ES。
@@ -490,6 +510,7 @@ typedef void *(*sdlLoadFunction_t)(void *, const char *);
 typedef void (*sdlUnloadObject_t)(void *);
 
 static sdlInitSubSystem_t realSdlInitSubSystem = NULL;
+static sdlGlSetSwapInterval_t realSdlGlSetSwapInterval = NULL;
 static sdlCreateWindow_t realSdlCreateWindow = NULL;
 static sdlCreateWindowWithProperties_t realSdlCreateWindowWithProperties = NULL;
 static sdlDestroyWindow_t realSdlDestroyWindow = NULL;
@@ -507,6 +528,10 @@ static bool proxy_SDL_InitSubSystem(SDL_InitFlags flags) {
         LOG_TO_E("SDL_Hook: SDL_InitSubsystem Error: %s", SDL_GetError_p());
     }
     return r;
+}
+
+static bool proxy_SDL_GL_SetSwapInterval(int interval) {
+    return realSdlGlSetSwapInterval(sdlEffectiveSwapInterval(interval));
 }
 
 static SDL_Window *proxy_SDL_CreateWindow(const char *title, int w, int h, uint32_t flags) {
@@ -585,6 +610,7 @@ void create_sdl_hooks(bytehook_stub_t (*bytehook_hook_all_p)(const char *callee_
                                                              bytehook_hooked_t hooked, void *hooked_arg)) {
     // Don't set callee_path_name to anything besides NULL or else it won't be able to find the symbol
     bytehook_stub_t stub_SDL_InitSubSystem = bytehook_hook_all_p(NULL, "SDL_InitSubSystem", &custom_SDL_InitSubSystem_Func, NULL, NULL);
+    bytehook_stub_t stub_SDL_GL_SetSwapInterval = bytehook_hook_all_p(NULL, "SDL_GL_SetSwapInterval", &custom_SDL_GL_SetSwapInterval_Func, NULL, NULL);
     bytehook_stub_t stub_SDL_GetWindowFromEvent = bytehook_hook_all_p(NULL, "SDL_GetWindowFromEvent", &custom_SDL_GetWindowFromEvent_Func, NULL, NULL);
     bytehook_stub_t stub_SDL_GetWindowFromID = bytehook_hook_all_p(NULL, "SDL_GetWindowFromID", &custom_SDL_GetWindowFromID_Func, NULL, NULL);
     // 窗口创建前强制 ES profile（覆盖 SDL3 的两种窗口创建入口）
@@ -599,14 +625,19 @@ void create_sdl_hooks(bytehook_stub_t (*bytehook_hook_all_p)(const char *callee_
     bytehook_stub_t stub_SDL_UnloadObject = bytehook_hook_all_p(NULL, "SDL_UnloadObject", &custom_SDL_UnloadObject_Func, NULL, NULL);
     // 主窗口销毁跟踪，配合窗口复用（见 custom_SDL_DestroyWindow_Func）
     bytehook_stub_t stub_SDL_DestroyWindow = bytehook_hook_all_p(NULL, "SDL_DestroyWindow", &custom_SDL_DestroyWindow_Func, NULL, NULL);
-    LOG_TO_I("SDL_Hook: Successfully initialized SDL hooks, stubs: InitSubSystem=%p GetWindowFromEvent=%p GetWindowFromID=%p LoadFunction=%p CreateWindow=%p CreateWindowWithProps=%p LoadObject=%p UnloadObject=%p DestroyWindow=%p", stub_SDL_InitSubSystem, stub_SDL_GetWindowFromEvent, stub_SDL_GetWindowFromID, stub_SDL_LoadFunction, stub_SDL_CreateWindow, stub_SDL_CreateWindowWithProperties, stub_SDL_LoadObject, stub_SDL_UnloadObject, stub_SDL_DestroyWindow);
+    LOG_TO_I("SDL_Hook: Successfully initialized SDL hooks, stubs: InitSubSystem=%p SetSwapInterval=%p GetWindowFromEvent=%p GetWindowFromID=%p LoadFunction=%p CreateWindow=%p CreateWindowWithProps=%p LoadObject=%p UnloadObject=%p DestroyWindow=%p", stub_SDL_InitSubSystem, stub_SDL_GL_SetSwapInterval, stub_SDL_GetWindowFromEvent, stub_SDL_GetWindowFromID, stub_SDL_LoadFunction, stub_SDL_CreateWindow, stub_SDL_CreateWindowWithProperties, stub_SDL_LoadObject, stub_SDL_UnloadObject, stub_SDL_DestroyWindow);
 }
 
 /** customDlsym 出口：把 SDL 符号的解析结果换成 dlsym 层代理；返回 NULL 表示不拦截 */
 void *sdlDlsymProxy(const char *symbol, void *real) {
+    if (symbol == NULL || real == NULL) return NULL;
     if (strcmp(symbol, "SDL_InitSubSystem") == 0) {
         if (realSdlInitSubSystem == NULL) realSdlInitSubSystem = (sdlInitSubSystem_t) real;
         return (void *) proxy_SDL_InitSubSystem;
+    }
+    if (strcmp(symbol, "SDL_GL_SetSwapInterval") == 0) {
+        if (realSdlGlSetSwapInterval == NULL) realSdlGlSetSwapInterval = (sdlGlSetSwapInterval_t) real;
+        return (void *) proxy_SDL_GL_SetSwapInterval;
     }
     if (strcmp(symbol, "SDL_CreateWindow") == 0) {
         if (realSdlCreateWindow == NULL) realSdlCreateWindow = (sdlCreateWindow_t) real;
