@@ -169,8 +169,10 @@ configurations.configureEach {
         if (requested.group == "androidx.activity") {
             useVersion(libs.versions.androidxActivity.get())
         }
-        // The Navigation3 adapter is independently versioned; keep other Lifecycle modules on 2.9.4.
+        // Navigation3 1.2.0 calls RememberLifecycleOwnerKt from Lifecycle Compose 2.10.0.
+        // Keep other Lifecycle modules on 2.9.4 to preserve the API 21-compatible core.
         if (requested.group == "androidx.lifecycle" &&
+            requested.name != "lifecycle-runtime-compose" &&
             !requested.name.startsWith("lifecycle-viewmodel-navigation3")
         ) {
             useVersion(libs.versions.lifecycleRuntimeKtx.get())

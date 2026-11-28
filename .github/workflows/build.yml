@@ -88,6 +88,18 @@ jobs:
           chmod +x gradlew
           ./gradlew ZalithLauncher:assemble${{ inputs.variant }} -Darch=${{ matrix.arch }}
 
+      - name: Verify and name all-architecture Debug APK
+        if: inputs.variant == 'Debug' && matrix.arch == 'all'
+        run: |
+          set -e
+          APK=$(find ZalithLauncher/build/outputs/apk/debug -maxdepth 1 -name "*.apk" -print -quit)
+          test -n "$APK"
+          unzip -t "$APK"
+          python3 .github/scripts/verify_apk_lifecycle_class.py "$APK"
+          APK_DIR=$(dirname "$APK")
+          mv "$APK" "$APK_DIR/BLauncher_Beta1.apk"
+          test -s "$APK_DIR/BLauncher_Beta1.apk"
+
       - name: Upload Release APK for ${{ matrix.arch }}
         if: inputs.variant == 'Release'
         continue-on-error: true
