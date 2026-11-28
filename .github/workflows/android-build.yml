@@ -81,8 +81,9 @@ jobs:
           OAUTH_CLIENT_ID: ${{ secrets.OAUTH_CLIENT_ID }}
           CURSEFORGE_API_KEY: ${{ secrets.CURSEFORGE_API_KEY }}
         run: |
+          set -o pipefail
           chmod +x gradlew
-          ./gradlew :ZalithLauncher:testDebugUnitTest -Darch=arm64 --stacktrace --no-daemon --max-workers=2
+          ./gradlew :ZalithLauncher:testDebugUnitTest -Darch=arm64 --stacktrace --no-daemon --max-workers=2 2>&1 | tee unit-test.log
 
       - name: Build ARM64 Debug APK
         env:
@@ -104,8 +105,11 @@ jobs:
           python3 - <<'PY'
           from pathlib import Path
 
-          log = Path("android-build.log")
-          if not log.is_file():
+          log = next(
+              (candidate for candidate in (Path("android-build.log"), Path("unit-test.log")) if candidate.is_file()),
+              None,
+          )
+          if log is None:
               raise SystemExit(0)
           lines = log.read_text(errors="replace").splitlines()
           if not lines:
