@@ -83,19 +83,44 @@ jobs:
           test -f "$ndk/source.properties"
           echo "ANDROID_NDK_HOME=$ndk" >> "$GITHUB_ENV"
 
+      - name: Report resolved Lifecycle Compose artifacts
+        if: inputs.variant == 'Debug' && matrix.arch == 'all'
+        run: |
+          chmod +x gradlew
+          ./gradlew :ZalithLauncher:dependencies --configuration debugRuntimeClasspath --no-daemon --max-workers=2 > dependency-report.txt
+          python3 - <<'PY'
+          from pathlib import Path
+
+          lines = Path("dependency-report.txt").read_text(errors="replace").splitlines()
+          resolved = sorted({
+              line.strip() for line in lines
+              if "androidx.lifecycle:lifecycle-runtime-compose" in line
+          })
+          if not resolved:
+              raise SystemExit("No Lifecycle Compose artifact appeared in debugRuntimeClasspath")
+          print(f"::warning title=Resolved Lifecycle Compose artifacts::{' | '.join(resolved)}")
+          PY
+
       - name: Build APK for ${{ matrix.arch }}
         run: |
           chmod +x gradlew
           ./gradlew ZalithLauncher:assemble${{ inputs.variant }} -Darch=${{ matrix.arch }}
 
-      - name: Verify and name all-architecture Debug APK
-        if: inputs.variant == 'Debug' && matrix.arch == 'all'
+      - name: Verify Debug APK contains Navigation3 Lifecycle class
+        if: inputs.variant == 'Debug' && (matrix.arch == 'all' || matrix.arch == 'arm64')
         run: |
           set -e
           APK=$(find ZalithLauncher/build/outputs/apk/debug -maxdepth 1 -name "*.apk" -print -quit)
           test -n "$APK"
           unzip -t "$APK"
           python3 .github/scripts/verify_apk_lifecycle_class.py "$APK"
+
+      - name: Name all-architecture Debug APK
+        if: inputs.variant == 'Debug' && matrix.arch == 'all'
+        run: |
+          set -e
+          APK=$(find ZalithLauncher/build/outputs/apk/debug -maxdepth 1 -name "*.apk" -print -quit)
+          test -n "$APK"
           APK_DIR=$(dirname "$APK")
           mv "$APK" "$APK_DIR/BLauncher_Beta1.apk"
           test -s "$APK_DIR/BLauncher_Beta1.apk"

@@ -69,7 +69,7 @@ jobs:
               r"androidx\.(?:activity:(?:activity|activity-compose)|"
               r"navigation3:(?:navigation3-runtime|navigation3-ui)|"
               r"navigationevent:(?:navigationevent|navigationevent-compose)|"
-              r"lifecycle:lifecycle-runtime-compose):"
+              r"lifecycle:lifecycle-runtime-compose(?:-[A-Za-z0-9_-]+)?:"
           )
           resolved = sorted({line.strip() for line in lines if pattern.search(line)})
           if not resolved:
