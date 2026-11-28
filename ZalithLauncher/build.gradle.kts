@@ -2,6 +2,8 @@ import com.android.build.api.variant.FilterConfiguration.FilterType.ABI
 import com.android.build.api.variant.impl.VariantOutputImpl
 import com.android.build.gradle.tasks.MergeSourceSetFolders
 import groovy.json.JsonOutput
+import org.gradle.api.tasks.Copy
+import org.gradle.api.tasks.testing.Test
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import java.security.MessageDigest
 import java.util.zip.ZipEntry
@@ -33,6 +35,21 @@ val defaultKeyPassword = project.findProperty("default_key_password") as? String
 val defaultCurseForgeApiKey = project.findProperty("curseforge_api_key") as? String
 
 val projectArch: String = System.getProperty("arch", "all")
+
+// GameVersionNumber loads these assets as classpath resources. Android packages them
+// under assets/, but the JVM unit-test classpath does not include the main asset tree.
+val unitTestVersionResourceDir = layout.buildDirectory.dir("generated/unitTestVersionResources")
+val copyUnitTestVersionResources = tasks.register<Copy>("copyUnitTestVersionResources") {
+    from("src/main/assets/game") {
+        include("versions.txt", "version-alias.csv")
+        into("assets/game")
+    }
+    into(unitTestVersionResourceDir)
+}
+tasks.withType<Test>().configureEach {
+    dependsOn(copyUnitTestVersionResources)
+    classpath += files(unitTestVersionResourceDir)
+}
 
 fun getKeyFromLocal(envKey: String, fileName: String? = null, default: String? = null): String {
     val key = System.getenv(envKey)
