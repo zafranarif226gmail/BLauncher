@@ -30,4 +30,4 @@ import androidx.navigation3.runtime.NavEntryDecorator
 @Composable
 @Suppress("UNCHECKED_CAST")
 fun <T : Any> rememberViewModelStoreNavEntryDecorator(): NavEntryDecorator<T> =
-    rememberLegacyDecorator() as NavEntryDecorator<T>
+    rememberLegacyDecorator<T>() as NavEntryDecorator<T>
