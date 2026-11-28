@@ -2,14 +2,9 @@
 
 Static Vercel site for the Android beta download. No build step, dependencies, analytics, or secrets are required.
 
-## Vercel settings
+## Download and deployment
 
-- Framework preset: **Other**
-- Root directory: `download-site`
-- Build command: none
-- Output directory: `.`
-
-The page looks up the newest successful `Build CI` run on the current Arena branch (then `main` as a fallback), finds its unexpired `debug apk (all)` artifact, and links to GitHub's public artifact-download endpoint. GitHub packages Actions artifacts as ZIP files; the downloaded archive contains `BLauncher_Beta1.apk`.
+The page links directly to the public GitHub Release asset `BLauncher_Beta1.apk` (no Actions-artifact ZIP). A matching `.sha256` checksum is published alongside it. To publish a beta, manually dispatch `Publish Beta APK` with the run ID of a successful `Build CI` run; the workflow validates the source run and artifact, downloads and re-verifies the APK, then creates the prerelease and checksum asset.
 
 ## Current deployment
 
