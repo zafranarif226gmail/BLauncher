@@ -103,8 +103,35 @@ jobs:
 
       - name: Build APK for ${{ matrix.arch }}
         run: |
+          set -o pipefail
           chmod +x gradlew
-          ./gradlew ZalithLauncher:assemble${{ inputs.variant }} -Darch=${{ matrix.arch }}
+          ./gradlew ZalithLauncher:assemble${{ inputs.variant }} -Darch=${{ matrix.arch }} --stacktrace --no-daemon --max-workers=2 2>&1 | tee "gradle-${{ matrix.arch }}.log"
+
+      - name: Report Gradle failure excerpt
+        if: failure() && (matrix.arch == 'all' || matrix.arch == 'arm64')
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          log = Path(f"gradle-${{ matrix.arch }}.log")
+          if not log.is_file():
+              raise SystemExit(0)
+          lines = log.read_text(errors="replace").splitlines()
+          markers = (
+              "what went wrong:", "* exception is:", "* where:", "execution failed for task",
+              "could not resolve", "could not find", "no matching variant", "manifest merger failed",
+              "duplicate class", "caused by:", "e: file://", "error:", "unresolved reference",
+              "type mismatch", "build failed",
+          )
+          selected = set()
+          for index, line in enumerate(lines):
+              if any(marker in line.lower() for marker in markers):
+                  selected.update(range(max(0, index - 2), min(len(lines), index + 12)))
+          selected.update(range(max(0, len(lines) - 30), len(lines)))
+          for index in sorted(selected)[:45]:
+              line = lines[index].replace("%", "%25")
+              print(f"::error title=Gradle diagnostic line {index + 1}::{line}")
+          PY
 
       - name: Verify Debug APK contains Navigation3 Lifecycle class
         if: inputs.variant == 'Debug' && (matrix.arch == 'all' || matrix.arch == 'arm64')
