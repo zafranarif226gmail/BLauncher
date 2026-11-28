@@ -23,11 +23,11 @@ import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDe
 import androidx.navigation3.runtime.NavEntryDecorator
 
 /**
- * Lifecycle ViewModel Navigation 2.9.4 predates Navigation3's typed decorator API and returns a
- * decorator keyed as [Any]. The implementation is key-type agnostic and uses each entry's content
- * key, so this only adapts the Kotlin type for typed back stacks.
+ * Lifecycle ViewModel Navigation 1.0.0-alpha04 predates Navigation3's typed decorator API and
+ * returns a decorator keyed as [Any]. The implementation is key-type agnostic and uses each
+ * entry's content key, so this only adapts the Kotlin type for typed back stacks.
  */
 @Composable
 @Suppress("UNCHECKED_CAST")
 fun <T : Any> rememberViewModelStoreNavEntryDecorator(): NavEntryDecorator<T> =
-    rememberLegacyDecorator<T>() as NavEntryDecorator<T>
+    rememberLegacyDecorator() as NavEntryDecorator<T>
