@@ -95,6 +95,7 @@ jobs:
           resolved = sorted({
               line.strip() for line in lines
               if "androidx.lifecycle:lifecycle-runtime-compose" in line
+              or "androidx.lifecycle:lifecycle-viewmodel-navigation3" in line
           })
           if not resolved:
               raise SystemExit("No Lifecycle Compose artifact appeared in debugRuntimeClasspath")

@@ -170,7 +170,12 @@ configurations.configureEach {
             useVersion(libs.versions.androidxActivity.get())
         }
         // Navigation3 1.2.0 calls RememberLifecycleOwnerKt from Lifecycle Compose 2.10.0.
-        // Keep every published runtime-compose variant on 2.10.0; preserve the API 21 core elsewhere.
+        // Keep every published runtime-compose variant on 2.10.0; pin the API-21 adapter line.
+        if (requested.group == "androidx.lifecycle" &&
+            requested.name.startsWith("lifecycle-viewmodel-navigation3")
+        ) {
+            useVersion(libs.versions.navigation3Lifecycle.get())
+        }
         if (requested.group == "androidx.lifecycle" &&
             !requested.name.startsWith("lifecycle-runtime-compose") &&
             !requested.name.startsWith("lifecycle-viewmodel-navigation3")
