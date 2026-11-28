@@ -5,9 +5,20 @@ on:
     branches:
       - '**'
   workflow_dispatch:
+    inputs:
+      publish_beta:
+        description: Publish a verified all-architecture Debug APK as the Beta 1 prerelease
+        required: true
+        type: boolean
+        default: false
+      build_run_id:
+        description: Successful Build CI run ID containing the APK to publish (required when publishing)
+        required: false
+        type: string
 
 jobs:
   Build:
+    if: github.event_name != 'workflow_dispatch' || inputs.publish_beta != true
     uses: ./.github/workflows/build.yml
     with:
       variant: Debug
@@ -16,3 +27,12 @@ jobs:
       STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
       OAUTH_CLIENT_ID: ${{ secrets.OAUTH_CLIENT_ID }}
       CURSEFORGE_API_KEY: ${{ secrets.CURSEFORGE_API_KEY }}
+
+  Publish-Beta:
+    if: github.event_name == 'workflow_dispatch' && inputs.publish_beta == true
+    permissions:
+      actions: read
+      contents: write
+    uses: ./.github/workflows/publish-beta.yml
+    with:
+      build_run_id: ${{ inputs.build_run_id }}

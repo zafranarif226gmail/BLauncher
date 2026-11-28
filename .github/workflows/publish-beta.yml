@@ -1,6 +1,12 @@
 name: Publish Beta APK
 
 on:
+  workflow_call:
+    inputs:
+      build_run_id:
+        description: Successful Build CI run containing the verified all-architecture Debug APK
+        required: true
+        type: string
   workflow_dispatch:
     inputs:
       build_run_id:

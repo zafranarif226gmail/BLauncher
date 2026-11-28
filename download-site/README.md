@@ -4,7 +4,7 @@ Static Vercel site for the Android beta download. No build step, dependencies, a
 
 ## Download and deployment
 
-The page links directly to the public GitHub Release asset `BLauncher_Beta1.apk` (no Actions-artifact ZIP). A matching `.sha256` checksum is published alongside it. To publish a beta, manually dispatch `Publish Beta APK` with the run ID of a successful `Build CI` run; the workflow validates the source run and artifact, downloads and re-verifies the APK, then creates the prerelease and checksum asset.
+The page links directly to the public GitHub Release asset `BLauncher_Beta1.apk` (no Actions-artifact ZIP). A matching `.sha256` checksum is published alongside it. To publish a beta from this branch, manually dispatch `Build CI` with `publish_beta` enabled and the run ID of a successful `Build CI` run; it calls the reusable `Publish Beta APK` workflow, which validates the source run and artifact, downloads and re-verifies the APK, then creates the prerelease and checksum asset.
 
 ## Current deployment
 
